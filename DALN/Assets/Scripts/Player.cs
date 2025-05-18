@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public Group group;
+    private Group _freeGroup;
+    private List<Group> groups;
     public Camera camera;
+    private Group targetGroup;
     private void Update()
     {
         CheckPositionMouseClick();
@@ -12,13 +15,25 @@ public class Player : MonoBehaviour
 
     private void CheckPositionMouseClick()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                group.GroupMoveTo(hit.point);
-            }
-        }
+        
+    }
+
+    public void UpdateTargetGroup(Group targetGroup)
+    {
+        this.targetGroup = targetGroup;
+    }
+    
+    public void NewGroup(Group oldGroup, int numSoldier)
+    {
+        if (numSoldier < oldGroup.GetCountSoldiers()) return;
+        var newGroup = ObjectPool.Instance.Dequeue(EObjectPoolType.Group).GetComponent<Group>();
+        newGroup.AddSoldiers(oldGroup.CutSoldiers(numSoldier));
+        groups.Add(newGroup);
+    }
+
+    public void RemoveGroup(Group group)
+    {
+        _freeGroup.AddSoldiers(group.CutSoldiers(group.GetCountSoldiers()));
+        groups.Remove(group);
     }
 }
