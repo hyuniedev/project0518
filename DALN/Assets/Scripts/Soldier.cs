@@ -1,115 +1,97 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
-using Random = UnityEngine.Random;
 
-public class Soldier : MonoBehaviour
+public struct SoldierData
 {
-    private NavMeshAgent _agent;
-    private SoldierData _soldierData;
+    public int Health;
+    public int Damage;
+    public int Armor;
+
+    public SoldierData(int health, int damage, int armor)
+    {
+        Health = health;
+        Damage = damage;
+        Armor = armor;
+    }
+}
+public class Soldier : NetworkBehaviour
+{
     public Action<Soldier> OnDeath;
-    private Group _opponents = null;
-    private Soldier _opponent = null;
-    public Group Group { get; set; }
+    private NavMeshAgent _agent;
+
+    private NetworkVariable<ESoldierState> _curState = new NetworkVariable<ESoldierState>(ESoldierState.Idle,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    
+    private NetworkVariable<SoldierData> _soldierData = new NetworkVariable<SoldierData>(
+            new SoldierData(GameData.InitHeath, GameData.InitDamage, GameData.InitArmor), 
+            NetworkVariableReadPermission.Everyone, 
+            NetworkVariableWritePermission.Server
+            );
+
+    private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
     }
 
-    private void OnEnable()
+    private void Update()
     {
-        ActionEvent.OnIncreaseArmor += IncreaseArmor;
-        ActionEvent.OnIncreaseDamage += IncreaseDamage;
-    }
-
-    private void OnDisable()
-    {
-        ActionEvent.OnIncreaseArmor -= IncreaseArmor;
-        ActionEvent.OnIncreaseDamage -= IncreaseDamage;
-    }
-
-    public void MoveTo(Vector3 newPosition)
-    {
-        if (_opponents != null)
+        if (!IsServer) return;
+        
+        if (_soldierData.Value.Health <= 0)
         {
-            _opponent = null;
-            _opponents = null;
-        }
-        _agent.SetDestination(newPosition);
-    }
-
-    public void UpdateData(SoldierData soldierData)
-    {
-        _soldierData = soldierData;
-    }
-
-    public void IncreaseDamage(int damage)
-    {
-        _soldierData.Damage += damage;
-    }
-
-    public void IncreaseArmor(int armor)
-    {
-        _soldierData.Armor += armor;
-    }
-
-    public void GetDamage(int damage)
-    {
-        _soldierData.Health -= damage;
-        if (_soldierData.Health <= 0)
-        {
-            this.Group = null;
+            ChangeStateServerRpc(ESoldierState.Death);
             OnDeath?.Invoke(this);
-            ObjectPool.Instance.Enqueue(EObjectPoolType.Soldier, this.gameObject);
         }
-    }
-
-    public void SetGroupOpponent(Group opponent)
-    {
-        _opponents = opponent;
-        ChangeOpponent(this);
-    }
-
-    private void ChangeOpponent(Soldier _)
-    {
-        // Remove ActionEvent On Prev-Opponent
-        if (_opponent != null)
-            _opponent.OnDeath -= ChangeOpponent;
-        
-        // Get new opponent
-        if (_opponents.GetCountSoldiers() == 0)
+        else if (CheckMoving())
         {
-            _opponents = null;
-            _opponent = null;
-            return;
-        }
-        
-        _opponent = (_opponents != null && _opponents.GetCountSoldiers()>0)? _opponents.GetSoldiers()[Random.Range(0,_opponents.GetCountSoldiers())] : null;
-        
-        if (_opponent != null)
+            ChangeStateServerRpc(ESoldierState.Move);
+        }else if (_opponentId.Value != 0)
         {
-            // Assign ActionEvent to new Opponent
-            _opponent.OnDeath += ChangeOpponent;
+            ChangeStateServerRpc(ESoldierState.Attack);
+        }
+        else
+        {
+            ChangeStateServerRpc(ESoldierState.Idle);
         }
     }
 
-    private void OnMouseEnter()
+    public void SetOpponent(Soldier opponent)
     {
-        Group.OnMouseHoverGroup(true);
+        if (!IsServer) return;
+        _opponentId.Value = opponent.NetworkObjectId;
     }
 
-    private void OnMouseExit()
+    public Soldier GetOpponent()
     {
-        Group.OnMouseHoverGroup(false);
+        if (_opponentId.Value == 0) return null;
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(_opponentId.Value, out var netObj))
+        {
+            return netObj.GetComponent<Soldier>();
+        }
+        return null;
+    }
+    
+    private bool CheckMoving()
+    {
+        return _agent.remainingDistance > _agent.stoppingDistance;
+    }
+    
+    [ServerRpc]
+    public void MoveServerRpc(Vector3 destination)
+    {
+        if (IsServer)
+        {
+            _agent.SetDestination(destination);
+        }
     }
 
-    private void OnMouseUp()
+    [ServerRpc]
+    private void ChangeStateServerRpc(ESoldierState newState)
     {
-        ActionEvent.OnSelectGroup?.Invoke(Group);
-    }
-
-    public void VisibleOutline(bool visible)
-    {
-        this.GetComponent<Outline>().enabled = visible;
+        if (_curState.Value == newState) return;
+        _curState.Value = newState;
     }
 }
