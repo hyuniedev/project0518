@@ -1,25 +1,50 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Group : MonoBehaviour
+public class Group
 {
-    private List<Soldier> _soldiers;
+    private List<Soldier> _soldiers = new List<Soldier>();
+    private Action<bool> OnMouseEvent;
 
     public int GetCountSoldiers()
     {
         return _soldiers.Count;
     }
 
-    public void AddSoldiers(List<Soldier> newSoldiers)
+    public List<Soldier> GetSoldiers()
     {
-        _soldiers.AddRange(newSoldiers);
+        return _soldiers;
     }
 
-    public List<Soldier> CutSoldiers(int numSoldiers)
+    public void AddSoldiers(List<Soldier> newSoldiers)
     {
-        var soldiers = _soldiers.GetRange(0, numSoldiers);
-        _soldiers.RemoveRange(0, numSoldiers);
-        return soldiers;
+        foreach (var soldier in newSoldiers)
+        {
+            OnMouseEvent += soldier.VisibleOutline;
+            soldier.OnDeath += RemoveSoldier;
+            soldier.Group = this;
+            _soldiers.Add(soldier);
+        }
+    }
+
+    // Remove Soldier on Death State
+    private void RemoveSoldier(Soldier soldier)
+    {
+        if (_soldiers.Contains(soldier))
+        {
+            soldier.OnDeath -= RemoveSoldier;
+            _soldiers.Remove(soldier);
+        }
+        if (_soldiers.Count == 0)
+        {
+            // ObjectPool.Instance.Enqueue(EObjectPoolType.Group, gameObject);
+        }
+    }
+
+    public void OnMouseHoverGroup(bool visible)
+    {
+        OnMouseEvent?.Invoke(visible);
     }
     
     public void GroupMoveTo(Vector3 pos)
