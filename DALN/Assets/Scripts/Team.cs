@@ -9,10 +9,14 @@ internal class Team
     public void AddSoldier(Soldier soldier)
     {
         soldier.OnDeath += RemoveSoldier;
-        OnTeamMove += soldier.MoveServerRpc;
+        OnTeamMove += soldier.MoveToServerRpc;
         _soliders.Add(soldier);
     }
 
+    public int GetNumSoldiers()
+    {
+        return _soliders.Count;
+    }
     public void RemoveSoldier(Soldier soldier)
     {
         soldier.OnDeath -= RemoveSoldier;
@@ -21,5 +25,10 @@ internal class Team
     public void TeamMoveTo(Vector3 newPosition)
     {
         OnTeamMove?.Invoke(newPosition);
+    }
+
+    public bool ContainsSoldier(Soldier soldier)
+    {
+        return _soliders.Contains(soldier);
     }
 }

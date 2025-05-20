@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
-public struct SoldierData
+public struct SoldierData : INetworkSerializable
 {
     public int Health;
     public int Damage;
@@ -15,9 +15,17 @@ public struct SoldierData
         Damage = damage;
         Armor = armor;
     }
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Health);
+        serializer.SerializeValue(ref Damage);
+        serializer.SerializeValue(ref Armor);
+    }
 }
 public class Soldier : NetworkBehaviour
 {
+    #region Define variable
     public Action<Soldier> OnDeath;
     private NavMeshAgent _agent;
 
@@ -31,15 +39,29 @@ public class Soldier : NetworkBehaviour
             );
 
     private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    #endregion
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
     }
 
+    // public override void OnNetworkSpawn()
+    // {
+    //     base.OnNetworkSpawn();
+    //     if (IsServer)
+    //     {
+    //         _agent.enabled = true;
+    //     }
+    //     else
+    //     {
+    //         _agent.enabled = false;
+    //     }
+    // }
+
     private void Update()
     {
-        if (!IsServer) return;
-        
+        if (!IsOwner) return;
+        Debug.Log(_curState.Value);
         if (_soldierData.Value.Health <= 0)
         {
             ChangeStateServerRpc(ESoldierState.Death);
@@ -74,18 +96,17 @@ public class Soldier : NetworkBehaviour
         return null;
     }
     
+    
     private bool CheckMoving()
     {
         return _agent.remainingDistance > _agent.stoppingDistance;
     }
     
     [ServerRpc]
-    public void MoveServerRpc(Vector3 destination)
+    public void MoveToServerRpc(Vector3 destination)
     {
-        if (IsServer)
-        {
-            _agent.SetDestination(destination);
-        }
+        if(!IsServer) return;
+        _agent.SetDestination(destination);
     }
 
     [ServerRpc]
