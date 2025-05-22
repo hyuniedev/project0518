@@ -45,23 +45,23 @@ public class Soldier : NetworkBehaviour
         _agent = GetComponent<NavMeshAgent>();
     }
 
-    // public override void OnNetworkSpawn()
-    // {
-    //     base.OnNetworkSpawn();
-    //     if (IsServer)
-    //     {
-    //         _agent.enabled = true;
-    //     }
-    //     else
-    //     {
-    //         _agent.enabled = false;
-    //     }
-    // }
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (IsServer)
+        {
+            _agent.enabled = true;
+        }
+        else
+        {
+            _agent.enabled = false;
+        }
+    }
 
     private void Update()
-    {
-        if (!IsOwner) return;
+    {        
         Debug.Log(_curState.Value);
+        if (!IsServer) return;
         if (_soldierData.Value.Health <= 0)
         {
             ChangeStateServerRpc(ESoldierState.Death);
@@ -80,10 +80,11 @@ public class Soldier : NetworkBehaviour
         }
     }
 
-    public void SetOpponent(Soldier opponent)
+    [ServerRpc]
+    public void SetOpponentServerRpc(ulong opponentId)
     {
         if (!IsServer) return;
-        _opponentId.Value = opponent.NetworkObjectId;
+        _opponentId.Value = opponentId;
     }
 
     public Soldier GetOpponent()
@@ -93,23 +94,27 @@ public class Soldier : NetworkBehaviour
         {
             return netObj.GetComponent<Soldier>();
         }
+
         return null;
     }
-    
-    
+
     private bool CheckMoving()
     {
         return _agent.remainingDistance > _agent.stoppingDistance;
     }
-    
+
+    public void RequestMoveTo(Vector3 position)
+    {
+        MoveToServerRpc(position);
+    }
     [ServerRpc]
-    public void MoveToServerRpc(Vector3 destination)
+    private void MoveToServerRpc(Vector3 destination)
     {
         if(!IsServer) return;
         _agent.SetDestination(destination);
     }
 
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void ChangeStateServerRpc(ESoldierState newState)
     {
         if (_curState.Value == newState) return;

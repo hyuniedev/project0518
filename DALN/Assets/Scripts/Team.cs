@@ -9,7 +9,7 @@ internal class Team
     public void AddSoldier(Soldier soldier)
     {
         soldier.OnDeath += RemoveSoldier;
-        OnTeamMove += soldier.MoveToServerRpc;
+        OnTeamMove += soldier.RequestMoveTo;
         _soliders.Add(soldier);
     }
 
