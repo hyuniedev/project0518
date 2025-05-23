@@ -39,10 +39,16 @@ public class Soldier : NetworkBehaviour
             );
 
     private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private Animator _animator;
+    private Outline _outline;
+    public Action<bool> OnMouseTarget;
     #endregion
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
+        _animator = GetComponent<Animator>();
+        _outline = GetComponent<Outline>();
+        _outline.enabled = false;
     }
 
     public override void OnNetworkSpawn()
@@ -59,8 +65,7 @@ public class Soldier : NetworkBehaviour
     }
 
     private void Update()
-    {        
-        Debug.Log(_curState.Value);
+    {
         if (!IsServer) return;
         if (_soldierData.Value.Health <= 0)
         {
@@ -94,7 +99,6 @@ public class Soldier : NetworkBehaviour
         {
             return netObj.GetComponent<Soldier>();
         }
-
         return null;
     }
 
@@ -119,5 +123,27 @@ public class Soldier : NetworkBehaviour
     {
         if (_curState.Value == newState) return;
         _curState.Value = newState;
+        ChangeStateClientRpc(newState.ToString());
+    }
+
+    [ClientRpc]
+    private void ChangeStateClientRpc(String newState)
+    {
+        _animator.CrossFade(newState, 0.1f);
+    }
+
+    private void OnMouseEnter()
+    {
+        OnMouseTarget?.Invoke(true);
+    }
+
+    private void OnMouseExit()
+    {
+        OnMouseTarget?.Invoke(false);
+    }
+
+    public void VisibleOutline(bool visible)
+    {
+        _outline.enabled = visible;
     }
 }
