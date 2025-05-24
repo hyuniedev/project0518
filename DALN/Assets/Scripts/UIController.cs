@@ -12,4 +12,9 @@ public class UIController : NetworkBehaviour
     {
         NetworkManager.Singleton.StartClient();
     }
+
+    public void GroupFreeSoldiers()
+    {
+        ActionEvent.OnGroupFreeSoldiers?.Invoke();
+    }
 }

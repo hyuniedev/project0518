@@ -102,6 +102,8 @@ public class Soldier : NetworkBehaviour
         return null;
     }
 
+    #region Move
+
     private bool CheckMoving()
     {
         return _agent.remainingDistance > _agent.stoppingDistance;
@@ -118,6 +120,10 @@ public class Soldier : NetworkBehaviour
         _agent.SetDestination(destination);
     }
 
+    #endregion
+    
+    #region Animation State
+
     [ServerRpc(RequireOwnership = false)]
     private void ChangeStateServerRpc(ESoldierState newState)
     {
@@ -129,8 +135,12 @@ public class Soldier : NetworkBehaviour
     [ClientRpc]
     private void ChangeStateClientRpc(String newState)
     {
-        _animator.CrossFade(newState, 0.1f);
+        _animator.CrossFade(newState, 0.01f);
     }
+
+    #endregion
+    
+    #region Ouline
 
     private void OnMouseEnter()
     {
@@ -146,4 +156,7 @@ public class Soldier : NetworkBehaviour
     {
         _outline.enabled = visible;
     }
+
+    #endregion
+    
 }

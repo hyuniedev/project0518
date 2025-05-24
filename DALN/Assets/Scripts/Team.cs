@@ -8,6 +8,7 @@ internal class Team
     private Action<Vector3> OnTeamMove;
     private Action<bool> OnVisibleOutline;
     private Team _opponentTeam;
+    public Action<Team> OnAllSoldiersOnTeamDeath;
     public void AddSoldier(Soldier soldier)
     {
         OnVisibleOutline += soldier.VisibleOutline;
@@ -22,6 +23,11 @@ internal class Team
         OnVisibleOutline?.Invoke(visible);
     }
 
+    public Transform GetTransformFirstSoldier()
+    {
+        return _soliders[0].transform;
+    }
+    
     public int GetNumSoldiers()
     {
         return _soliders.Count;
@@ -30,6 +36,7 @@ internal class Team
     {
         soldier.OnDeath -= RemoveSoldier;
         _soliders.Remove(soldier);
+        OnAllSoldiersOnTeamDeath?.Invoke(this);
     }
     public void TeamMoveTo(Vector3 newPosition)
     {
@@ -44,5 +51,16 @@ internal class Team
     public void UpdateOpponentTeam(Team team)
     {
         _opponentTeam = team;
+    }
+
+    public Vector3 GetTeamPosition()
+    {
+        if(_soliders == null || _soliders.Count == 0) return Vector3.zero;
+        Vector3 sum = Vector3.zero;
+        foreach (var soldier in _soliders)
+        {
+            sum += soldier.transform.position;
+        }
+        return sum / _soliders.Count + (Vector3.forward * -20f);
     }
 }

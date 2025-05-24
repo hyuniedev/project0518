@@ -46,9 +46,8 @@ public class SoldierObjectPool : NetworkBehaviour
         pool.Enqueue(soldier);
     }
 
-    public ulong Dequeue(ulong ownerId)
+    public ulong Dequeue(ulong ownerId, int teamId)
     {
-        if (!IsServer) return 0;
         Soldier soldier;
         if (pool.Count > 0)
         {
@@ -57,7 +56,7 @@ public class SoldierObjectPool : NetworkBehaviour
         }
         else
         {
-            var go = Instantiate(prefab);
+            var go = Instantiate(prefab,GameData.TeamInitialPosition[teamId], Quaternion.identity);
             soldier = go.GetComponent<Soldier>();
         }
         soldier.GetComponent<NetworkObject>().SpawnWithOwnership(ownerId);
