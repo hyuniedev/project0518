@@ -1,66 +1,28 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Data_Manager;
+using DesignPattern;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
-using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Controller
 {
-    public class LobbyController : MonoBehaviour
+    public class LobbyController : Singleton<LobbyController>
     {
-        #region Setup Singleton
-
-        private static LobbyController _instance;
-
-        public static LobbyController Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new GameObject("LobbyController").AddComponent<LobbyController>();
-                }
-                return _instance;
-            }
-        }
-
-        private void Awake()
-        {
-            if (_instance != null && _instance != this)
-            {
-                Destroy(this.gameObject);
-            }
-            _instance = this;
-            DontDestroyOnLoad(this);
-        }
-
-        #endregion
-        
-        private bool _initialized = false;
         public Lobby CurrentLobby { get; private set; }
         private Coroutine _heartbeatLobby;
         private Coroutine _pollLobby;
-        
-        private async void Start()
-        {
-            _initialized = false;
-            await UnityServices.InitializeAsync();
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            _initialized = true;
-        }
 
         public async Task<Lobby> CreateLobby(string lobbyName)
         {
-            if (!_initialized) return null;
             try
             {
                 CreateLobbyOptions options = new CreateLobbyOptions
@@ -94,9 +56,8 @@ namespace Controller
             return null;
         }
 
-        public async void JoinLobby(string lobbyId)
+        public async Task JoinLobby(string lobbyId)
         {
-            if (!_initialized) return;
             try
             {
                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
@@ -105,7 +66,7 @@ namespace Controller
                 };
                 Lobby lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, options);
 
-                if (!lobby.Data.ContainsKey("RelayCode")) return;
+                if (!lobby.Data.TryGetValue("RelayCode",out var code)) return;
                 var relayCode = lobby.Data["RelayCode"].Value;
 
                 var joinAllocation = await RelayService.Instance.JoinAllocationAsync(relayCode);
@@ -122,7 +83,7 @@ namespace Controller
             }
         }
 
-        public async void LeaveLobby()
+        public async Task LeaveLobby()
         {
             try
             {
@@ -144,6 +105,11 @@ namespace Controller
             {
                 Debug.LogException(e);
             }
+        }
+
+        public void StartGame()
+        {
+            NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
         }
         
         private IEnumerator HeartbeatLobby(string lobbyId)
@@ -176,8 +142,6 @@ namespace Controller
 
         public async Task<List<Lobby>> FetchLobbies()
         {
-            if (!_initialized) return null;
-            Debug.Log("Fetching lobbies");
             var task = await LobbyService.Instance.QueryLobbiesAsync(new QueryLobbiesOptions());
             return task.Results;
         }

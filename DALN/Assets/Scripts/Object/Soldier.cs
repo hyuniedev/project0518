@@ -77,23 +77,28 @@ namespace Object
         private void Update()
         {
             if (!IsServer) return;
+
+            ESoldierState newState;
             if (_soldierData.Value.Health <= 0)
             {
-                ChangeStateServerRpc(ESoldierState.Death);
-                OnDeath?.Invoke(this);
+                newState = ESoldierState.Death;
             }
             else if (CheckMoving())
             {
-                ChangeStateServerRpc(ESoldierState.Move);
+                newState = ESoldierState.Move;
             }
             else if (_opponentId.Value != 0)
             {
-                ChangeStateServerRpc(ESoldierState.Attack);
+                newState = ESoldierState.Attack;
             }
             else
             {
-                ChangeStateServerRpc(ESoldierState.Idle);
+                newState = ESoldierState.Idle;
             }
+
+            if (_curState.Value == newState) return;
+            ChangeStateServerRpc(newState);
+            if (_soldierData.Value.Health <= 0) OnDeath?.Invoke(this);
         }
 
         [ServerRpc]
@@ -146,7 +151,6 @@ namespace Object
         [ServerRpc(RequireOwnership = false)]
         private void ChangeStateServerRpc(ESoldierState newState)
         {
-            if (_curState.Value == newState) return;
             _curState.Value = newState;
             ChangeStateClientRpc(newState.ToString());
         }

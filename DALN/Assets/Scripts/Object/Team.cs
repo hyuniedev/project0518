@@ -37,9 +37,12 @@ namespace Object
             return _soliders.Count;
         }
 
-        public void RemoveSoldier(Soldier soldier)
+        private void RemoveSoldier(Soldier soldier)
         {
             soldier.OnDeath -= RemoveSoldier;
+            OnVisibleOutline -= soldier.VisibleOutline;
+            soldier.OnMouseTarget -= VisibleOutlineAllSoldiers;
+            OnTeamMove -= soldier.RequestMoveTo;
             _soliders.Remove(soldier);
             OnAllSoldiersOnTeamDeath?.Invoke(this);
         }
