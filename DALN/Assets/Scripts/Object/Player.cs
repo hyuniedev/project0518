@@ -14,8 +14,8 @@ namespace Object
         private Team _selectedTeam = null;
         private List<Team> _teams = new List<Team>();
         private List<Soldier> _freeSoldier = new List<Soldier>();
-        [SerializeField] private Camera _camera;
-        [SerializeField] private CinemachineCamera _virtualCamera;
+        private Camera _camera;
+        private CinemachineCamera _virtualCamera;
 
         private void Awake()
         {
@@ -35,9 +35,17 @@ namespace Object
             ActionEvent.OnGroupFreeSoldiers += GroupFreeSoldiers;
         }
 
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (!IsOwner) return;
+            ActionEvent.OnGroupFreeSoldiers -= GroupFreeSoldiers;
+        }
+
         private void Update()
         {
             if (!IsOwner) return;
+            if(Input.GetKeyDown(KeyCode.G)) GroupFreeSoldiers();
             TargetMouse();
             MoveMouse();
             TargetTeamByKeyboard();
@@ -73,7 +81,7 @@ namespace Object
         {
             if (Input.GetMouseButtonDown(0))
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     if (hit.collider.CompareTag("Soldier"))
@@ -120,6 +128,7 @@ namespace Object
 
         private void RemoveTeam(Team team)
         {
+            team.OnAllSoldiersOnTeamDeath -= RemoveTeam;
             _teams.Remove(team);
         }
 

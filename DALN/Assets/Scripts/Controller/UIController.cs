@@ -1,69 +1,105 @@
-using System;
-using Unity.Netcode;
-using Unity.Services.Authentication;
+using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 namespace Controller
 {
     public class UIController : MonoBehaviour
     {
-        [SerializeField] private GameObject itemLobbyPrefab;
-        [SerializeField] private Transform lobbiesParent;
-        [SerializeField] private Button createNewLobbyButton;
-        [SerializeField] private GameObject inputLabel;
-        [SerializeField] private Button reloadButton;
+        [SerializeField] private GameObject homePanel;
+        [SerializeField] private GameObject lobbyPanel;
+        [SerializeField] private GameObject signinPanel;
+        [SerializeField] private GameObject signUpPanel;
+
+        #region Setup Singleton
+
+        private static UIController _instance;
+
+        public static UIController Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new GameObject("UI Controller").AddComponent<UIController>();
+                }
+                return _instance;
+            }
+        }
+
+        private void Awake()
+        {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(this.gameObject);
+            }
+
+            _instance = this;
+        }
+
+        #endregion
 
         private void Start()
         {
-            inputLabel.SetActive(false);
-            createNewLobbyButton.onClick.AddListener(UpdateStateCreateNewLobbyButton);
-            inputLabel.GetComponentInChildren<Button>().onClick.AddListener(()=>
+            ToSceneSignIn();
+            StartCoroutine(WaitUnityServicesInitialized());
+        }
+        
+        private IEnumerator WaitUnityServicesInitialized()
+        {
+            while (!AccountController.Instance.Initialized)
             {
-                UpdateStateCreateNewLobbyButton();
-                CreateNewLobby(inputLabel.GetComponentInChildren<InputField>().text);
-                inputLabel.GetComponentInChildren<InputField>().text = "";
-            });
-            reloadButton.onClick.AddListener(ReloadLobbies);
+                yield return null;
+            }
+            _ = InitScene();
         }
 
-        private void UpdateStateCreateNewLobbyButton()
+        private async Task InitScene()
         {
-            inputLabel.SetActive(!inputLabel.activeSelf);
-            createNewLobbyButton.GetComponentInChildren<Text>().text = inputLabel.activeSelf?"Cancel":"New Lobby";
-        }
-        public void StartGame()
-        {
-            if (LobbyController.Instance.CurrentLobby.Id != AuthenticationService.Instance.PlayerId) return;
-            NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
-        }
-
-        private async void CreateNewLobby(string lobbyName)
-        {
-            var item = Instantiate(itemLobbyPrefab, lobbiesParent);
-            item.GetComponentInChildren<Text>().text = lobbyName;
-            var lobby = await LobbyController.Instance.CreateLobby(lobbyName);
-            if(lobby == null) return;
-            item.GetComponentInChildren<Button>().onClick.AddListener(()=>JoinLobby(lobby.Id));
-        }
-
-        private void JoinLobby(string lobbyId)
-        {
-            LobbyController.Instance.JoinLobby(lobbyId);
-        }
-
-        private async void ReloadLobbies()
-        {
-            var ls = await LobbyController.Instance.FetchLobbies();
-            foreach (Transform child in lobbiesParent)
-                Destroy(child.gameObject);
-            foreach (var l in ls)
+            if (AccountController.Instance.SignedIn)
             {
-                var item = Instantiate(itemLobbyPrefab, lobbiesParent);
-                item.GetComponentInChildren<Text>().text = l.Name;
-                item.GetComponentInChildren<Button>().onClick.AddListener(()=>JoinLobby(l.Id));
+                ToSceneHome();
+            }else if (AccountController.Instance.SessionTokenExists)
+            {
+                await AccountController.Instance.SignInWithAnonymous();
+                ToSceneHome();
+            }
+            else
+            {
+                ToSceneSignIn();
             }
         }
-    }    
+
+        public void ToSceneSignIn()
+        {
+            signinPanel.SetActive(true);
+            homePanel.SetActive(false);
+            lobbyPanel.SetActive(false);
+            signUpPanel.SetActive(false);
+        }
+
+        public void ToSceneSignUp()
+        {
+            signinPanel.SetActive(false);
+            homePanel.SetActive(false);
+            lobbyPanel.SetActive(false);
+            signUpPanel.SetActive(true);
+        }
+
+        public void ToSceneHome()
+        {
+            signinPanel.SetActive(false);
+            homePanel.SetActive(true);
+            lobbyPanel.SetActive(false);
+            signinPanel.SetActive(false);
+        }
+
+        public void ToSceneLobby()
+        {
+            signinPanel.SetActive(false);
+            homePanel.SetActive(false);
+            lobbyPanel.SetActive(true);
+            signinPanel.SetActive(false);
+        }
+    }
 }
