@@ -2,6 +2,7 @@ using System;
 using Controller;
 using UnityEngine;
 using UnityEngine.UI;
+using WebSocketSharp;
 
 namespace UI
 {
@@ -25,11 +26,16 @@ namespace UI
                 inputLabel.GetComponentInChildren<InputField>().text = "";
             });
             reloadButton.onClick.AddListener(ReloadLobbies);
-            signOutButton.onClick.AddListener(() =>
+            signOutButton.onClick.AddListener(async () =>
             {
-                AccountController.Instance.SignOut();
+                await AccountController.Instance.SignOut();
                 UIController.Instance.ToSceneSignIn();
             });
+        }
+
+        private void OnEnable()
+        {
+            ReloadLobbies();
         }
 
         private void UpdateStateCreateNewLobbyButton()
@@ -40,6 +46,7 @@ namespace UI
         
         private async void CreateNewLobby(string lobbyName)
         {
+            if (lobbyName.IsNullOrEmpty()) return;
             var item = Instantiate(itemLobbyPrefab, lobbiesParent);
             item.GetComponentInChildren<Text>().text = lobbyName;
             var lobby = await LobbyController.Instance.CreateLobby(lobbyName);

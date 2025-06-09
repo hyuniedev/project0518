@@ -10,7 +10,6 @@ namespace Object
 {
     public class Player : NetworkBehaviour
     {
-        public int TeamId { get; set; } = 1;
         private Team _selectedTeam = null;
         private List<Team> _teams = new List<Team>();
         private List<Soldier> _freeSoldier = new List<Soldier>();
@@ -29,7 +28,7 @@ namespace Object
             if (!IsOwner) return;
             for (int i = 0; i < GameData.InitCountSoldierPerPlayer; i++)
             {
-                RequestSpawnSoldierServerRpc(TeamId);
+                RequestSpawnSoldierServerRpc(PlayerData.Instance.TeamId);
             }
 
             ActionEvent.OnGroupFreeSoldiers += GroupFreeSoldiers;

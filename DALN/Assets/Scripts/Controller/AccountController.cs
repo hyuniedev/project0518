@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Data_Manager;
 using DesignPattern;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -21,14 +22,16 @@ namespace Controller
             Initialized = true;
         }
 
-        public void SignOut()
+        public async Task SignOut()
         {
+            await PlayerData.Instance.SaveData();
             AuthenticationService.Instance.SignOut();
         }
 
         public async Task SignUp(string username, string password)
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
+            await PlayerData.Instance.LoadData();
         }
 
         public async Task SignIn(string username, string password)
@@ -39,6 +42,7 @@ namespace Controller
         public async Task SignInWithAnonymous()
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            await PlayerData.Instance.LoadData();
         }
     }
 }
