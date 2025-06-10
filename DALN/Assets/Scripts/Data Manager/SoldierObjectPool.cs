@@ -64,7 +64,7 @@ namespace Data_Manager
                 var go = Instantiate(prefab, GameData.TeamInitialPosition[teamId], Quaternion.identity);
                 soldier = go.GetComponent<Soldier>();
             }
-
+            soldier.gameObject.layer = LayerMask.NameToLayer($"Soldier{teamId}");
             soldier.GetComponent<NetworkObject>().SpawnWithOwnership(ownerId);
             return soldier.GetComponent<NetworkObject>().NetworkObjectId;
         }

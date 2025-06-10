@@ -31,12 +31,12 @@ namespace Controller
         public async Task SignUp(string username, string password)
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
-            await PlayerData.Instance.LoadData();
         }
 
         public async Task SignIn(string username, string password)
         {
             await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
+            await PlayerData.Instance.LoadData();
         }
 
         public async Task SignInWithAnonymous()

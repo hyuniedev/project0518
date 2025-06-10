@@ -9,7 +9,6 @@ namespace Object
         private List<Soldier> _soliders = new List<Soldier>();
         private Action<Vector3> OnTeamMove;
         private Action<bool> OnVisibleOutline;
-        private Team _opponentTeam;
         public Action<Team> OnAllSoldiersOnTeamDeath;
 
         public void AddSoldier(Soldier soldier)
@@ -17,6 +16,7 @@ namespace Object
             OnVisibleOutline += soldier.VisibleOutline;
             soldier.OnMouseTarget += VisibleOutlineAllSoldiers;
             soldier.OnDeath += RemoveSoldier;
+            soldier.OnTargetOpponent += SetOpponentTeam;
             // soldier.SetStoppingDistance(0.5f*_soliders.Count);
             OnTeamMove += soldier.RequestMoveTo;
             _soliders.Add(soldier);
@@ -57,21 +57,12 @@ namespace Object
             return _soliders.Contains(soldier);
         }
 
-        public void UpdateOpponentTeam(Team team)
+        private void SetOpponentTeam(ulong opponentId)
         {
-            _opponentTeam = team;
-        }
-
-        public Vector3 GetTeamPosition()
-        {
-            if (_soliders == null || _soliders.Count == 0) return Vector3.zero;
-            Vector3 sum = Vector3.zero;
             foreach (var soldier in _soliders)
             {
-                sum += soldier.transform.position;
+                soldier.SetOpponentServerRpc(opponentId);
             }
-
-            return sum / _soliders.Count + (Vector3.forward * -20f);
         }
     }
 }

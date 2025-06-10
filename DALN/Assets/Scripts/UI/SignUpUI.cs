@@ -23,7 +23,7 @@ namespace UI
         {
             if (passwordInput.text != repeatPasswordInput.text) return;
             await AccountController.Instance.SignUp(usernameInput.text, passwordInput.text);
-            UIController.Instance.ToSceneSignIn();
+            UIController.Instance.ToSceneHome();
         }
 
         private void BackToLogin()

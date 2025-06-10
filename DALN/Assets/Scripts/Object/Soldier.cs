@@ -12,7 +12,7 @@ namespace Object
         public int Health;
         public int Damage;
         public int Armor;
-
+        
         public SoldierData(int health, int damage, int armor)
         {
             Health = health;
@@ -50,6 +50,8 @@ namespace Object
         private Animator _animator;
         private Outline _outline;
         public Action<bool> OnMouseTarget;
+        public Action<ulong> OnTargetOpponent;
+        private Collider[] _colliders = new Collider[3];
 
         #endregion
 
@@ -80,43 +82,52 @@ namespace Object
 
             ESoldierState newState;
             if (_soldierData.Value.Health <= 0)
-            {
                 newState = ESoldierState.Death;
-            }
             else if (CheckMoving())
-            {
                 newState = ESoldierState.Move;
-            }
             else if (_opponentId.Value != 0)
-            {
                 newState = ESoldierState.Attack;
-            }
             else
-            {
                 newState = ESoldierState.Idle;
-            }
 
-            if (_curState.Value == newState) return;
-            ChangeStateServerRpc(newState);
+            if (_curState.Value != newState)
+            {
+                _curState.Value = newState;
+                ChangeStateClientRpc(newState.ToString());                
+            }
             if (_soldierData.Value.Health <= 0) OnDeath?.Invoke(this);
+            
+            var opponent = CheckOpponent();
+            if (opponent != null && opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
+            {
+                RequireSetOpponentToTeamClientRpc(opponent.GetComponent<NetworkObject>().NetworkObjectId);
+                Debug.Log($"Soldier id: {GetComponent<NetworkObject>().NetworkObjectId} set opponent id: {opponent.GetComponent<NetworkObject>().NetworkObjectId}");
+            }else if (opponent == null)
+            {
+                RequireSetOpponentToTeamClientRpc(0);
+            }
         }
 
-        [ServerRpc]
+        private GameObject CheckOpponent()
+        {
+            int layer = 0;
+            for(int i = 1; i<=3; i++)
+                if(i!=PlayerData.Instance.TeamId)
+                    layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
+            var hitCount = Physics.OverlapBoxNonAlloc(transform.position, Vector3.one * 10f, _colliders ,Quaternion.identity, layer);
+            return hitCount > 0 ? _colliders[0].gameObject : null;
+        }
+
+        [ClientRpc]
+        private void RequireSetOpponentToTeamClientRpc(ulong opponentId)
+        {
+            OnTargetOpponent?.Invoke(opponentId);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
         public void SetOpponentServerRpc(ulong opponentId)
         {
-            if (!IsServer) return;
             _opponentId.Value = opponentId;
-        }
-
-        public Soldier GetOpponent()
-        {
-            if (_opponentId.Value == 0) return null;
-            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(_opponentId.Value, out var netObj))
-            {
-                return netObj.GetComponent<Soldier>();
-            }
-
-            return null;
         }
 
         #region Move
@@ -147,14 +158,7 @@ namespace Object
         #endregion
 
         #region Animation State
-
-        [ServerRpc(RequireOwnership = false)]
-        private void ChangeStateServerRpc(ESoldierState newState)
-        {
-            _curState.Value = newState;
-            ChangeStateClientRpc(newState.ToString());
-        }
-
+        
         [ClientRpc]
         private void ChangeStateClientRpc(String newState)
         {
