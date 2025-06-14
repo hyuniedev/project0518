@@ -10,7 +10,7 @@ namespace Object
         private Action<Vector3> OnTeamMove;
         private Action<bool> OnVisibleOutline;
         public Action<Team> OnAllSoldiersOnTeamDeath;
-
+        
         public void AddSoldier(Soldier soldier)
         {
             OnVisibleOutline += soldier.VisibleOutline;

@@ -51,8 +51,9 @@ namespace Object
         private Outline _outline;
         public Action<bool> OnMouseTarget;
         public Action<ulong> OnTargetOpponent;
-        private Collider[] _colliders = new Collider[3];
-
+        private float _nextTimeCheckOpponent;
+        public int TeamId{get;set;}
+        private GameObject _opponent;
         #endregion
 
         private void Awake()
@@ -78,8 +79,20 @@ namespace Object
 
         private void Update()
         {
-            if (!IsServer) return;
+            if (IsServer)
+            {
+                StateAnimUpdate();
+                if (_nextTimeCheckOpponent < Time.time)
+                {
+                    _nextTimeCheckOpponent = Time.time + 0.5f;
+                    FindOpponentUpdate();
+                }
+                LookToOpponent();
+            }
+        }
 
+        private void StateAnimUpdate()
+        {
             ESoldierState newState;
             if (_soldierData.Value.Health <= 0)
                 newState = ESoldierState.Death;
@@ -96,26 +109,43 @@ namespace Object
                 ChangeStateClientRpc(newState.ToString());                
             }
             if (_soldierData.Value.Health <= 0) OnDeath?.Invoke(this);
-            
-            var opponent = CheckOpponent();
-            if (opponent != null && opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
-            {
-                RequireSetOpponentToTeamClientRpc(opponent.GetComponent<NetworkObject>().NetworkObjectId);
-                Debug.Log($"Soldier id: {GetComponent<NetworkObject>().NetworkObjectId} set opponent id: {opponent.GetComponent<NetworkObject>().NetworkObjectId}");
-            }else if (opponent == null)
-            {
-                RequireSetOpponentToTeamClientRpc(0);
-            }
         }
 
+        #region Check Opponent
+
+        private void FindOpponentUpdate()
+        {
+            var opponent = CheckOpponent();
+            if (opponent != null && opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
+                RequireSetOpponentToTeamClientRpc(opponent.GetComponent<NetworkObject>().NetworkObjectId);
+            else if (opponent == null)
+                RequireSetOpponentToTeamClientRpc(0);
+            _opponent = opponent;   
+        }
+
+        private void LookToOpponent()
+        {
+            if (_opponent!=null)
+            {
+                var direction = _opponent.transform.position - transform.position;
+                direction.Normalize();
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction),Time.deltaTime * 10f);
+            }
+        }
+        
         private GameObject CheckOpponent()
         {
-            int layer = 0;
-            for(int i = 1; i<=3; i++)
-                if(i!=PlayerData.Instance.TeamId)
-                    layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
-            var hitCount = Physics.OverlapBoxNonAlloc(transform.position, Vector3.one * 10f, _colliders ,Quaternion.identity, layer);
-            return hitCount > 0 ? _colliders[0].gameObject : null;
+            int layer = 1<< LayerMask.NameToLayer("Soldier");
+            var _colliders = Physics.OverlapBox(transform.position, Vector3.one * 10f ,Quaternion.identity, layer);
+            if (_colliders.Length > 0)
+            {
+                foreach(var opponent in _colliders)
+                {
+                    if(opponent.GetComponent<Soldier>().TeamId!=TeamId)
+                        return opponent.gameObject;
+                }
+            }
+            return null;
         }
 
         [ClientRpc]
@@ -130,6 +160,8 @@ namespace Object
             _opponentId.Value = opponentId;
         }
 
+        #endregion
+        
         #region Move
 
         private bool CheckMoving()
@@ -185,6 +217,15 @@ namespace Object
         }
 
         #endregion
+        
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = Color.red;
+
+            // Vẽ khung vùng box mà bạn dùng cho OverlapBox
+            Gizmos.matrix = Matrix4x4.TRS(transform.position, Quaternion.identity, Vector3.one);
+            Gizmos.DrawWireCube(Vector3.zero, Vector3.one * 10f * 2f);
+        }
 
     }
 }
