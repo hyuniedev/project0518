@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using Data_Manager;
+using Object;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,7 +11,6 @@ namespace Controller
     public class GameController : NetworkBehaviour
     {
         [SerializeField] private GameObject playerPrefab;
-
         private void Start()
         {
             StartCoroutine(AddListenerOnLoadComplete());

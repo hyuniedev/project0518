@@ -1,4 +1,5 @@
 using System;
+using Controller;
 using Data_Manager;
 using Unity.Netcode;
 using Unity.VisualScripting;
@@ -38,21 +39,17 @@ namespace Object
         private NetworkVariable<ESoldierState> _curState = new NetworkVariable<ESoldierState>(ESoldierState.Idle,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        private NetworkVariable<SoldierData> _soldierData = new NetworkVariable<SoldierData>(
-            new SoldierData(GameData.InitHeath, GameData.InitDamage, GameData.InitArmor),
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Server
-        );
+        private NetworkVariable<SoldierData> _soldierData;
 
         private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
+        public NetworkVariable<int> _teamId {get;set;} = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private int teamIdLocal = 0;
         private Animator _animator;
         private Outline _outline;
         public Action<bool> OnMouseTarget;
         public Action<ulong> OnTargetOpponent;
         private float _nextTimeCheckOpponent;
-        public int TeamId{get;set;}
         private GameObject _opponent;
         #endregion
 
@@ -62,6 +59,15 @@ namespace Object
             _animator = GetComponent<Animator>();
             _outline = GetComponent<Outline>();
             _outline.enabled = false;
+
+            if (GameData.Instance != null)
+            {
+                _soldierData = new NetworkVariable<SoldierData>(
+                    new SoldierData(GameData.Instance.gameData.initHealth, GameData.Instance.gameData.initDamage, GameData.Instance.gameData.initArmor),
+                    NetworkVariableReadPermission.Everyone,
+                    NetworkVariableWritePermission.Server
+                );
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -76,6 +82,7 @@ namespace Object
                 _agent.enabled = false;
             }
         }
+        
 
         private void Update()
         {
@@ -88,6 +95,15 @@ namespace Object
                     FindOpponentUpdate();
                 }
                 LookToOpponent();
+            }
+
+            if (IsClient)
+            {
+                if (_teamId.Value != teamIdLocal)
+                {
+                    teamIdLocal = _teamId.Value;
+                    UpdateTexture();
+                }
             }
         }
 
@@ -110,7 +126,14 @@ namespace Object
             }
             if (_soldierData.Value.Health <= 0) OnDeath?.Invoke(this);
         }
-
+        
+        private void UpdateTexture()
+        {
+            if(_teamId.Value <=0) return;
+            transform.GetChild(0).GetComponent<Renderer>().material.mainTexture =
+                GameData.Instance.gameData.soliderTextures[_teamId.Value - 1];
+        }
+        
         #region Check Opponent
 
         private void FindOpponentUpdate()
@@ -141,7 +164,7 @@ namespace Object
             {
                 foreach(var opponent in _colliders)
                 {
-                    if(opponent.GetComponent<Soldier>().TeamId!=TeamId)
+                    if(opponent.GetComponent<Soldier>()._teamId.Value != _teamId.Value)
                         return opponent.gameObject;
                 }
             }
@@ -218,14 +241,5 @@ namespace Object
 
         #endregion
         
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = Color.red;
-
-            // Vẽ khung vùng box mà bạn dùng cho OverlapBox
-            Gizmos.matrix = Matrix4x4.TRS(transform.position, Quaternion.identity, Vector3.one);
-            Gizmos.DrawWireCube(Vector3.zero, Vector3.one * 10f * 2f);
-        }
-
     }
 }

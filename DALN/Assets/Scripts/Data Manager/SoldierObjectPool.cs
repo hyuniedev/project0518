@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Controller;
 using Object;
 using Unity.Netcode;
 using UnityEngine;
@@ -42,7 +43,6 @@ namespace Data_Manager
 
         [SerializeField] private GameObject prefab;
         private Queue<Soldier> pool = new Queue<Soldier>();
-
         public void Enqueue(Soldier soldier)
         {
             if (!IsServer) return;
@@ -61,11 +61,11 @@ namespace Data_Manager
             }
             else
             {
-                var go = Instantiate(prefab, GameData.TeamInitialPosition[teamId], Quaternion.identity);
+                var go = Instantiate(prefab, GameData.Instance.gameData.TeamInitialPosition[teamId], Quaternion.identity);
                 soldier = go.GetComponent<Soldier>();
             }
-            soldier.TeamId = teamId;
             soldier.GetComponent<NetworkObject>().SpawnWithOwnership(ownerId);
+            soldier._teamId.Value = teamId;
             return soldier.GetComponent<NetworkObject>().NetworkObjectId;
         }
     }

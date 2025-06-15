@@ -38,10 +38,10 @@ namespace Controller
                         })
                 };
                 Lobby lobby =
-                    await LobbyService.Instance.CreateLobbyAsync(lobbyName: lobbyName, GameData.MaxPlayersPerLobby,
+                    await LobbyService.Instance.CreateLobbyAsync(lobbyName: lobbyName, GameData.Instance.gameData.maxPlayersPerLobby,
                         options);
                 
-                var allocation = await RelayService.Instance.CreateAllocationAsync(GameData.MaxPlayersPerLobby);
+                var allocation = await RelayService.Instance.CreateAllocationAsync(GameData.Instance.gameData.maxPlayersPerLobby);
                 var relayCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                 
                 await LobbyService.Instance.UpdateLobbyAsync(lobby.Id, new UpdateLobbyOptions
@@ -131,7 +131,7 @@ namespace Controller
                 Debug.LogException(e);
             }
         }
-
+        
         public void StartGame()
         {
             NetworkManager.Singleton.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);

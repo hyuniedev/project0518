@@ -26,7 +26,7 @@ namespace Object
         {
             base.OnNetworkSpawn();
             if (!IsOwner) return;
-            for (int i = 0; i < GameData.InitCountSoldierPerPlayer; i++)
+            for (int i = 0; i < GameData.Instance.gameData.initCountSoldierPerPlayer; i++)
             {
                 RequestSpawnSoldierServerRpc(PlayerData.Instance.TeamId);
             }

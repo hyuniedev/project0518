@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86dd2d53688a4ccc95dd244f85550895, type: 3}
+  m_Name: GameData
+  m_EditorClassIdentifier: 
+  initHealth: 100
+  initDamage: 20
+  initArmor: 0
+  initCountSoldierPerPlayer: 5
+  feeIncreaseDamage: 5
+  feeIncreaseArmor: 5
+  maxPlayersPerLobby: 3
+  soliderTextures:
+  - {fileID: 2800000, guid: 0c743ef734d33eb44a0d35de77833ee7, type: 3}
+  - {fileID: 2800000, guid: fa6655f88691b324b9000c0aedcbff5e, type: 3}
+  - {fileID: 2800000, guid: 85d76010dbffc4a44ae88ffcbcbc323a, type: 3}

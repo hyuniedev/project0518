@@ -9,7 +9,7 @@ namespace Data_Manager
 {
     public class PlayerData : Singleton<PlayerData>
     {
-        public int TeamId { get; set; } = 0;
+        public int TeamId{get;set;}
         public string Name { get; set; }
         public int Rank { get; set; } = 0;
 
