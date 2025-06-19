@@ -34,7 +34,8 @@ namespace Controller
                         data: new Dictionary<string, PlayerDataObject>
                         {
                             {"Name",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Name)},
-                            {"Rank",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Rank.ToString())}
+                            {"Rank",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Rank.ToString())},
+                            {"TeamId", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, "1")}
                         })
                 };
                 Lobby lobby =
@@ -78,10 +79,39 @@ namespace Controller
                         data: new Dictionary<string, PlayerDataObject>
                         {
                             {"Name",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Name)},
-                            {"Rank",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Rank.ToString())}
+                            {"Rank",new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, PlayerData.Instance.Rank.ToString())},
+                            {"TeamId", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, "0")}
                         })
                 };
                 Lobby lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, options);
+                
+                // Setup PlayerData
+                List<int> teamIdInLobby = new List<int>();
+                foreach (var player in lobby.Players)
+                    if (player.Data.TryGetValue("TeamId", out var teamId))
+                        teamIdInLobby.Add(Int32.Parse(teamId.Value));
+                for(int i = 1; i <= 3 ; i++)
+                    if (!teamIdInLobby.Contains(i))
+                    {
+                        PlayerData.Instance.TeamId = i;
+                        UpdatePlayerOptions updatePlayerOptions = new UpdatePlayerOptions();
+                        updatePlayerOptions.Data = new Dictionary<string, PlayerDataObject>
+                        {
+                            {
+                                "Name",
+                                new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public,
+                                    PlayerData.Instance.Name)
+                            },
+                            {
+                                "Rank",
+                                new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public,
+                                    PlayerData.Instance.Rank.ToString())
+                            },
+                            { "TeamId", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, i.ToString()) }
+                        };
+                        await LobbyService.Instance.UpdatePlayerAsync(lobby.Id, AuthenticationService.Instance.PlayerId, updatePlayerOptions);
+                        break;
+                    }
                 
                 if (!lobby.Data.TryGetValue("RelayCode",out var code)) return;
                 var relayCode = lobby.Data["RelayCode"].Value;
@@ -93,9 +123,6 @@ namespace Controller
                 _pollLobby = StartCoroutine(PollLobby());
                 NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(rds);
                 NetworkManager.Singleton.StartClient();
-                
-                // Setup PlayerData
-                PlayerData.Instance.TeamId = lobby.Players.Count;
             }
             catch (LobbyServiceException e)
             {

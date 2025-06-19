@@ -42,6 +42,7 @@ namespace Object
             soldier.OnDeath -= RemoveSoldier;
             OnVisibleOutline -= soldier.VisibleOutline;
             soldier.OnMouseTarget -= VisibleOutlineAllSoldiers;
+            soldier.OnTargetOpponent -= SetOpponentTeam;
             OnTeamMove -= soldier.RequestMoveTo;
             _soliders.Remove(soldier);
             OnAllSoldiersOnTeamDeath?.Invoke(this);

@@ -10516,8 +10516,9 @@ GameObject:
   - component: {fileID: 2092950338}
   - component: {fileID: 2092950339}
   - component: {fileID: 2092950340}
+  - component: {fileID: 2092950341}
   m_Layer: 0
-  m_Name: GameManager
+  m_Name: ObjectPoolManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10577,6 +10578,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   prefab: {fileID: 2331091238699934731, guid: 13e8f9bc4da28d848a74f0f892ea3b0e, type: 3}
+--- !u!114 &2092950341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2092950336}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80c9b7f3d9614b51af26c21118b1f8cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  bulletPrefab: {fileID: 2624669590333837549, guid: ac4778988492c274fb4bb21720d19244, type: 3}
 --- !u!4 &2094538017 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8925190298440201630, guid: 16fb34314974e0f4c9e7e5a3bd93d6fb, type: 3}

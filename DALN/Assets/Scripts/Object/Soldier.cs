@@ -1,6 +1,7 @@
 using System;
 using Controller;
 using Data_Manager;
+using DesignPattern;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -29,7 +30,7 @@ namespace Object
         }
     }
 
-    public class Soldier : NetworkBehaviour
+    public class Soldier : NetworkBehaviour, IGetDamage
     {
         #region Define variable
 
@@ -43,14 +44,22 @@ namespace Object
 
         private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        public NetworkVariable<int> _teamId {get;set;} = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private int teamIdLocal = 0;
+
+        public NetworkVariable<int> TeamId { get; set; } = new NetworkVariable<int>(0,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        private int _teamIdLocal = 0;
         private Animator _animator;
         private Outline _outline;
         public Action<bool> OnMouseTarget;
         public Action<ulong> OnTargetOpponent;
         private float _nextTimeCheckOpponent;
         private GameObject _opponent;
+
+        [SerializeField] private Transform gunBarrelPosition;
+        private float _nextTimeShoot;
+        private bool _settedDisableComponnnents = false;
+
         #endregion
 
         private void Awake()
@@ -63,7 +72,8 @@ namespace Object
             if (GameData.Instance != null)
             {
                 _soldierData = new NetworkVariable<SoldierData>(
-                    new SoldierData(GameData.Instance.gameData.initHealth, GameData.Instance.gameData.initDamage, GameData.Instance.gameData.initArmor),
+                    new SoldierData(GameData.Instance.gameData.initHealth, GameData.Instance.gameData.initDamage,
+                        GameData.Instance.gameData.initArmor),
                     NetworkVariableReadPermission.Everyone,
                     NetworkVariableWritePermission.Server
                 );
@@ -82,36 +92,61 @@ namespace Object
                 _agent.enabled = false;
             }
         }
-        
+
 
         private void Update()
         {
             if (IsServer)
             {
                 StateAnimUpdate();
-                if (_nextTimeCheckOpponent < Time.time)
+                if (_soldierData.Value.Health <= 0)
                 {
-                    _nextTimeCheckOpponent = Time.time + 0.5f;
-                    FindOpponentUpdate();
+                    RemoveSoldierClientRpc();
+                    if(!_settedDisableComponnnents)
+                        SetDisableComponents();
+                    return;
                 }
+
                 LookToOpponent();
+                FindOpponentUpdate();
+                if (_opponent != null)
+                {
+                    AttackOpponent();
+                }
             }
 
             if (IsClient)
             {
-                if (_teamId.Value != teamIdLocal)
+                if (TeamId.Value != _teamIdLocal)
                 {
-                    teamIdLocal = _teamId.Value;
+                    _teamIdLocal = TeamId.Value;
                     UpdateTexture();
                 }
             }
+        }
+
+        private void SetDisableComponents()
+        {
+            _settedDisableComponnnents = true;
+            transform.GetComponent<CapsuleCollider>().enabled = false;
+            transform.GetComponent<Soldier>().enabled = false;
+            SetDisableComponentsClientRpc();
+        }
+
+        [ClientRpc]
+        private void SetDisableComponentsClientRpc()
+        {
+            transform.GetComponent<CapsuleCollider>().enabled = false;
+            transform.GetComponent<Soldier>().enabled = false;
         }
 
         private void StateAnimUpdate()
         {
             ESoldierState newState;
             if (_soldierData.Value.Health <= 0)
+            {
                 newState = ESoldierState.Death;
+            }
             else if (CheckMoving())
                 newState = ESoldierState.Move;
             else if (_opponentId.Value != 0)
@@ -124,26 +159,29 @@ namespace Object
                 _curState.Value = newState;
                 ChangeStateClientRpc(newState.ToString());                
             }
-            if (_soldierData.Value.Health <= 0) OnDeath?.Invoke(this);
         }
         
         private void UpdateTexture()
         {
-            if(_teamId.Value <=0) return;
+            if(TeamId.Value <=0) return;
             transform.GetChild(0).GetComponent<Renderer>().material.mainTexture =
-                GameData.Instance.gameData.soliderTextures[_teamId.Value - 1];
+                GameData.Instance.gameData.soliderTextures[TeamId.Value - 1];
         }
-        
+
+        [ClientRpc]
+        private void RemoveSoldierClientRpc()
+        {
+            OnDeath?.Invoke(this);
+        }
         #region Check Opponent
 
         private void FindOpponentUpdate()
         {
-            var opponent = CheckOpponent();
-            if (opponent != null && opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
-                RequireSetOpponentToTeamClientRpc(opponent.GetComponent<NetworkObject>().NetworkObjectId);
-            else if (opponent == null)
+            _opponent = CheckOpponent();
+            if (_opponent != null && _opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
+                RequireSetOpponentToTeamClientRpc(_opponent.GetComponent<NetworkObject>().NetworkObjectId);
+            else if (_opponent == null)
                 RequireSetOpponentToTeamClientRpc(0);
-            _opponent = opponent;   
         }
 
         private void LookToOpponent()
@@ -152,20 +190,42 @@ namespace Object
             {
                 var direction = _opponent.transform.position - transform.position;
                 direction.Normalize();
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction),Time.deltaTime * 10f);
+                var targetAngle = Quaternion.LookRotation(direction);
+                targetAngle *= Quaternion.Euler(0f, 50f, 0f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetAngle,Time.deltaTime * 10f);
             }
+        }
+
+        private void AttackOpponent()
+        {
+            var direction = _opponent.transform.position - transform.position;
+            direction.Normalize();
+            BulletObjectPool.Instance.Dequeue(TeamId.Value, gunBarrelPosition, direction);            
         }
         
         private GameObject CheckOpponent()
         {
-            int layer = 1<< LayerMask.NameToLayer("Soldier");
+            int layer = 0;
+            for(int i = 1; i <= 3 ; i++)
+                if(i!=TeamId.Value)
+                    layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
             var _colliders = Physics.OverlapBox(transform.position, Vector3.one * 10f ,Quaternion.identity, layer);
             if (_colliders.Length > 0)
             {
                 foreach(var opponent in _colliders)
                 {
-                    if(opponent.GetComponent<Soldier>()._teamId.Value != _teamId.Value)
+                    if (opponent.GetComponent<Soldier>().TeamId.Value != TeamId.Value)
+                    {
+                        var direction = opponent.transform.position - transform.position;
+                        Debug.DrawRay(gunBarrelPosition.position, direction.normalized * 100f, Color.red, 1f);
+                        if (Physics.Raycast(gunBarrelPosition.position, direction,out var hit))
+                        {
+                            var layerOpponent = LayerMask.LayerToName(hit.transform.gameObject.layer);
+                            if (!layerOpponent.StartsWith("Soldier"))
+                                return null;
+                        }
                         return opponent.gameObject;
+                    }
                 }
             }
             return null;
@@ -240,6 +300,12 @@ namespace Object
         }
 
         #endregion
-        
+
+        public void GetDamage(int damage)
+        {
+            var health = this._soldierData.Value.Health;
+            health -= damage;
+            _soldierData.Value = new SoldierData(health, _soldierData.Value.Damage, _soldierData.Value.Armor);
+        }
     }
 }

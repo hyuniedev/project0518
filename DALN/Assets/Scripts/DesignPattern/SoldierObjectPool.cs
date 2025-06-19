@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
-using Controller;
+using Data_Manager;
 using Object;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Data_Manager
+namespace DesignPattern
 {
     public class SoldierObjectPool : NetworkBehaviour
     {
@@ -47,7 +46,7 @@ namespace Data_Manager
         {
             if (!IsServer) return;
             soldier.gameObject.SetActive(false);
-            soldier.GetComponent<NetworkObject>().Despawn();
+            soldier.GetComponent<NetworkObject>().Despawn(false);
             pool.Enqueue(soldier);
         }
 
@@ -65,7 +64,8 @@ namespace Data_Manager
                 soldier = go.GetComponent<Soldier>();
             }
             soldier.GetComponent<NetworkObject>().SpawnWithOwnership(ownerId);
-            soldier._teamId.Value = teamId;
+            soldier.TeamId.Value = teamId;
+            soldier.gameObject.layer = LayerMask.NameToLayer($"Soldier{teamId}");
             return soldier.GetComponent<NetworkObject>().NetworkObjectId;
         }
     }
