@@ -214,7 +214,7 @@ namespace Controller
             catch (LobbyServiceException e)
             {
                 CurrentLobby = null;
-                Debug.Log("Host đã out phòng");
+                Debug.Log($"Host đã out phòng {e.Message}");
             }
         }
         

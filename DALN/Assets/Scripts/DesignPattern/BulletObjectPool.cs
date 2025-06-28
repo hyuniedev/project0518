@@ -43,10 +43,9 @@ namespace DesignPattern
             pool.Enqueue(obj);
         }
 
-        public void Dequeue(int teamId, Transform gunBarrelPosition, Vector3 direction)
+        public void Dequeue(int teamId, Transform gunBarrelPosition, Vector3 direction, int damage)
         {
             GameObject bullet;
-            Debug.Log($"Bullet Pool Count: {pool.Count}");
             if (pool.Count > 0)
             {
                 bullet = pool.Dequeue();
@@ -56,7 +55,7 @@ namespace DesignPattern
             {
                 bullet = Instantiate(bulletPrefab, gunBarrelPosition.position, Quaternion.identity);
             }
-            bullet.GetComponent<Bullet>().Fire(teamId, gunBarrelPosition.position, direction);
+            bullet.GetComponent<Bullet>().Fire(teamId, gunBarrelPosition.position, direction, damage);
             bullet.GetComponent<NetworkObject>().Spawn();
         }
     }

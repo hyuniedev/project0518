@@ -1,20 +1,25 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Controller;
 using Data_Manager;
 using DesignPattern;
+using UI;
 using Unity.Cinemachine;
 using Unity.Netcode;
+using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace Object
 {
     public class Player : NetworkBehaviour
     {
-        private Team _selectedTeam = null;
-        private List<Team> _teams = new List<Team>();
+        public Team SelectedTeam { get; set; } = null;
+        public List<Team> Teams { get; } = new List<Team>();
         private List<Soldier> _freeSoldier = new List<Soldier>();
         private Camera _camera;
         private CinemachineCamera _virtualCamera;
+        [SerializeField] private GameObject soldierPrefab;
 
         private void Awake()
         {
@@ -26,41 +31,44 @@ namespace Object
         {
             base.OnNetworkSpawn();
             if (!IsOwner) return;
-            for (int i = 0; i < GameData.Instance.gameData.initCountSoldierPerPlayer; i++)
-            {
-                RequestSpawnSoldierServerRpc(PlayerData.Instance.TeamId);
-            }
-
-            ActionEvent.OnGroupFreeSoldiers += GroupFreeSoldiers;
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            base.OnNetworkDespawn();
-            if (!IsOwner) return;
-            ActionEvent.OnGroupFreeSoldiers -= GroupFreeSoldiers;
+            FindFirstObjectByType<GameUI>().Player = this;
+            CreateNewTeam();
         }
 
         private void Update()
         {
             if (!IsOwner) return;
-            if(Input.GetKeyDown(KeyCode.G)) GroupFreeSoldiers();
+            if (SelectedTeam != null && SelectedTeam.GetNumSoldiers() == 0)
+            {
+                Teams.Remove(SelectedTeam);
+                SelectedTeam = null;
+            }
             TargetMouse();
-            MoveMouse();
+            MoveOrTargetOpponentMouse();
             TargetTeamByKeyboard();
         }
 
-        private void GroupFreeSoldiers()
+        public void CreateNewTeam()
         {
             if (!IsOwner) return;
+            for (int i = 0; i < GameData.Instance.gameData.initCountSoldierPerTeam; i++)
+                RequestSpawnSoldierServerRpc(PlayerData.Instance.TeamId);
+            StartCoroutine(WaitForSpawnSoldierAndCreateTeam());
+        }
+
+        private IEnumerator WaitForSpawnSoldierAndCreateTeam()
+        {
+            while (_freeSoldier.Count < GameData.Instance.gameData.initCountSoldierPerTeam)
+            {
+                yield return null;
+            }
             var newTeam = new Team();
             foreach (var soldier in _freeSoldier)
             {
                 newTeam.AddSoldier(soldier);
             }
-
             newTeam.OnAllSoldiersOnTeamDeath += RemoveTeam;
-            _teams.Add(newTeam);
+            Teams.Add(newTeam);
             _freeSoldier.Clear();
         }
 
@@ -70,8 +78,8 @@ namespace Object
             {
                 if (Input.GetKeyDown(KeyCode.Alpha0 + i))
                 {
-                    if (i - 1 < _teams.Count)
-                        _selectedTeam = _teams[i - 1];
+                    if (i - 1 < Teams.Count)
+                        SelectedTeam = Teams[i - 1];
                 }
             }
         }
@@ -86,33 +94,39 @@ namespace Object
                     if (hit.collider.CompareTag("Soldier"))
                     {
                         var soldier = hit.collider.GetComponent<Soldier>();
-                        foreach (var team in _teams)
+                        foreach (var team in Teams)
                         {
                             if (team.ContainsSoldier(soldier))
                             {
-                                _selectedTeam = team;
+                                SelectedTeam = team;
                                 break;
                             }
                         }
                     }
                     else
                     {
-                        _selectedTeam = null;
+                        SelectedTeam = null;
                     }
                 }
             }
         }
 
-        private void MoveMouse()
+        private void MoveOrTargetOpponentMouse()
         {
             if (Input.GetMouseButtonDown(1))
             {
                 Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
-                    if (_selectedTeam != null)
+                    if (SelectedTeam != null)
                     {
-                        _selectedTeam.TeamMoveTo(hit.point);
+                        if (hit.transform.TryGetComponent<Soldier>(out var soldier))
+                        {
+                            if (soldier.TeamId.Value == PlayerData.Instance.TeamId) return;
+                            SelectedTeam.SetOpponentTeam(soldier.transform.GetComponent<NetworkObject>().NetworkObjectId);
+                        }
+                        else
+                            SelectedTeam.TeamMoveTo(hit.point);
                     }
                 }
             }
@@ -120,22 +134,26 @@ namespace Object
 
         private void LateUpdate()
         {
-            if (!IsOwner || _selectedTeam == null) return;
-            _virtualCamera.Follow = _selectedTeam.GetTransformFirstSoldier();
-            _virtualCamera.LookAt = _selectedTeam.GetTransformFirstSoldier();
+            if (!IsOwner || SelectedTeam == null || SelectedTeam.GetNumSoldiers() <= 0) return;
+            _virtualCamera.Follow = SelectedTeam.GetTransformFirstSoldier();
+            _virtualCamera.LookAt = SelectedTeam.GetTransformFirstSoldier();
         }
 
         private void RemoveTeam(Team team)
         {
             team.OnAllSoldiersOnTeamDeath -= RemoveTeam;
-            _teams.Remove(team);
+            Teams.Remove(team);
         }
 
         [ServerRpc]
         private void RequestSpawnSoldierServerRpc(int teamId, ServerRpcParams rpcParams = default)
         {
-            var soldier = SoldierObjectPool.Singleton.Dequeue(rpcParams.Receive.SenderClientId, teamId);
-            AddSoldierToFreeListClientRpc(soldier);
+            var go = Instantiate(soldierPrefab, GameData.Instance.gameData.TeamInitialPosition[teamId], Quaternion.identity);
+            Soldier soldier = go.GetComponent<Soldier>();
+            soldier.GetComponent<NetworkObject>().SpawnWithOwnership(rpcParams.Receive.SenderClientId);
+            soldier.TeamId.Value = teamId;
+            soldier.gameObject.layer = LayerMask.NameToLayer($"Soldier{teamId}");
+            AddSoldierToFreeListClientRpc(soldier.GetComponent<NetworkObject>().NetworkObjectId);
         }
 
         [ClientRpc]
