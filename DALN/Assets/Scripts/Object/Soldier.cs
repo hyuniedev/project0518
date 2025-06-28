@@ -40,7 +40,7 @@ namespace Object
         private NetworkVariable<ESoldierState> _curState = new NetworkVariable<ESoldierState>(ESoldierState.Idle,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        private NetworkVariable<SoldierData> _soldierData;
+        public NetworkVariable<SoldierData> SoldierData { get; private set; }
 
         private NetworkVariable<ulong> _opponentId = new NetworkVariable<ulong>(0,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -54,8 +54,8 @@ namespace Object
         public Action<bool> OnMouseTarget;
         public Action<ulong> OnTargetOpponent;
         private float _nextTimeCheckOpponent;
-        private GameObject _opponent;
-
+        private GameObject _target;
+        
         [SerializeField] private Transform gunBarrelPosition;
         private float _nextTimeShoot;
         private bool _settedDisableComponnnents = false;
@@ -65,13 +65,13 @@ namespace Object
         private void Awake()
         {
             _agent = GetComponent<NavMeshAgent>();
-            _animator = GetComponent<Animator>();
-            _outline = GetComponent<Outline>();
+            _animator = transform.GetChild(0).GetComponent<Animator>();
+            _outline = transform.GetChild(0).GetComponent<Outline>();
             _outline.enabled = false;
 
             if (GameData.Instance != null)
             {
-                _soldierData = new NetworkVariable<SoldierData>(
+                SoldierData = new NetworkVariable<SoldierData>(
                     new SoldierData(GameData.Instance.gameData.initHealth, GameData.Instance.gameData.initDamage,
                         GameData.Instance.gameData.initArmor),
                     NetworkVariableReadPermission.Everyone,
@@ -96,31 +96,32 @@ namespace Object
 
         private void Update()
         {
-            if (IsServer)
-            {
-                StateAnimUpdate();
-                if (_soldierData.Value.Health <= 0)
-                {
-                    RemoveSoldierClientRpc();
-                    if(!_settedDisableComponnnents)
-                        SetDisableComponents();
-                    return;
-                }
-
-                LookToOpponent();
-                FindOpponentUpdate();
-                if (_opponent != null)
-                {
-                    AttackOpponent();
-                }
-            }
-
             if (IsClient)
             {
                 if (TeamId.Value != _teamIdLocal)
                 {
                     _teamIdLocal = TeamId.Value;
                     UpdateTexture();
+                }
+            }
+            if (IsServer)
+            {
+                StateAnimUpdate();
+                if (IsDeath)
+                {
+                    RemoveSoldierClientRpc();
+                    if(!_settedDisableComponnnents)
+                        SetDisableComponents();
+                    return;
+                }
+                if (_opponentId.Value==0) return;
+                if (_target.GetComponent<Soldier>().IsDeath || Vector3.Distance(_target.transform.position, transform.position) > 10f)
+                    FindOpponentUpdate();
+                LookToOpponent();
+                if (_nextTimeShoot < Time.time && _target != null && !_target.GetComponent<Soldier>().IsDeath)
+                {
+                    _nextTimeShoot = Time.time + 0.3f;
+                    AttackOpponent();
                 }
             }
         }
@@ -130,6 +131,7 @@ namespace Object
             _settedDisableComponnnents = true;
             transform.GetComponent<CapsuleCollider>().enabled = false;
             transform.GetComponent<Soldier>().enabled = false;
+            _agent.enabled = false; 
             SetDisableComponentsClientRpc();
         }
 
@@ -143,10 +145,8 @@ namespace Object
         private void StateAnimUpdate()
         {
             ESoldierState newState;
-            if (_soldierData.Value.Health <= 0)
-            {
+            if (IsDeath)
                 newState = ESoldierState.Death;
-            }
             else if (CheckMoving())
                 newState = ESoldierState.Move;
             else if (_opponentId.Value != 0)
@@ -164,7 +164,7 @@ namespace Object
         private void UpdateTexture()
         {
             if(TeamId.Value <=0) return;
-            transform.GetChild(0).GetComponent<Renderer>().material.mainTexture =
+            transform.GetChild(0).GetChild(0).GetComponent<Renderer>().material.mainTexture =
                 GameData.Instance.gameData.soliderTextures[TeamId.Value - 1];
         }
 
@@ -177,30 +177,30 @@ namespace Object
 
         private void FindOpponentUpdate()
         {
-            _opponent = CheckOpponent();
-            if (_opponent != null && _opponent.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
-                RequireSetOpponentToTeamClientRpc(_opponent.GetComponent<NetworkObject>().NetworkObjectId);
-            else if (_opponent == null)
+            var nearObject = CheckOpponent();
+            if (nearObject != null && nearObject.GetComponent<NetworkObject>().NetworkObjectId != _opponentId.Value)
+                RequireSetOpponentToTeamClientRpc(nearObject.GetComponent<NetworkObject>().NetworkObjectId);
+            else if (nearObject == null)
                 RequireSetOpponentToTeamClientRpc(0);
         }
 
         private void LookToOpponent()
         {
-            if (_opponent!=null)
+            if (_target!=null)
             {
-                var direction = _opponent.transform.position - transform.position;
+                var direction = _target.transform.position - transform.position;
                 direction.Normalize();
                 var targetAngle = Quaternion.LookRotation(direction);
-                targetAngle *= Quaternion.Euler(0f, 50f, 0f);
+                targetAngle *= Quaternion.Euler(0f, -55f, 0f);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetAngle,Time.deltaTime * 10f);
             }
         }
 
         private void AttackOpponent()
         {
-            var direction = _opponent.transform.position - transform.position;
+            var direction = _target.transform.position - transform.position;
             direction.Normalize();
-            BulletObjectPool.Instance.Dequeue(TeamId.Value, gunBarrelPosition, direction);            
+            BulletObjectPool.Instance.Dequeue(TeamId.Value, gunBarrelPosition, direction, SoldierData.Value.Damage);
         }
         
         private GameObject CheckOpponent()
@@ -209,21 +209,13 @@ namespace Object
             for(int i = 1; i <= 3 ; i++)
                 if(i!=TeamId.Value)
                     layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
-            var _colliders = Physics.OverlapBox(transform.position, Vector3.one * 10f ,Quaternion.identity, layer);
-            if (_colliders.Length > 0)
+            var colliders = Physics.OverlapBox(transform.position, Vector3.one * 10f ,Quaternion.identity, layer);
+            if (colliders.Length > 0)
             {
-                foreach(var opponent in _colliders)
+                foreach(var opponent in colliders)
                 {
                     if (opponent.GetComponent<Soldier>().TeamId.Value != TeamId.Value)
                     {
-                        var direction = opponent.transform.position - transform.position;
-                        Debug.DrawRay(gunBarrelPosition.position, direction.normalized * 100f, Color.red, 1f);
-                        if (Physics.Raycast(gunBarrelPosition.position, direction,out var hit))
-                        {
-                            var layerOpponent = LayerMask.LayerToName(hit.transform.gameObject.layer);
-                            if (!layerOpponent.StartsWith("Soldier"))
-                                return null;
-                        }
                         return opponent.gameObject;
                     }
                 }
@@ -240,35 +232,39 @@ namespace Object
         [ServerRpc(RequireOwnership = false)]
         public void SetOpponentServerRpc(ulong opponentId)
         {
-            _opponentId.Value = opponentId;
+            if (opponentId == 0)
+            {
+                _opponentId.Value = 0;
+                _target = null;
+            }
+            else if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(opponentId, out var objNetwork))
+            {
+                var direction = objNetwork.transform.position - transform.position;
+                var layer = 1 << LayerMask.NameToLayer("House");
+                if (!Physics.Raycast(transform.position + Vector3.up, direction , Vector3.Distance(transform.position,objNetwork.transform.position),layer))
+                {
+                    _opponentId.Value = opponentId;
+                    _target = objNetwork.gameObject;    
+                    Debug.DrawRay(transform.position + Vector3.up, direction * Vector3.Distance(transform.position,_target.transform.position), Color.red, 1f);
+                }
+            }
         }
 
         #endregion
         
         #region Move
 
-        private bool CheckMoving()
-        {
-            return _agent.remainingDistance > _agent.stoppingDistance;
-        }
+        private bool CheckMoving() => _agent.remainingDistance > _agent.stoppingDistance;
 
-        // public void SetStoppingDistance(float stoppingDistance)
-        // {
-        //     if(!IsServer) return;
-        //     _agent.stoppingDistance = stoppingDistance;
-        // }
 
         public void RequestMoveTo(Vector3 position)
         {
+            SetOpponentServerRpc(0);
             MoveToServerRpc(position);
         }
-
+        
         [ServerRpc]
-        private void MoveToServerRpc(Vector3 destination)
-        {
-            if (!IsServer) return;
-            _agent.SetDestination(destination);
-        }
+        private void MoveToServerRpc(Vector3 destination) => _agent.SetDestination(destination);
 
         #endregion
 
@@ -286,26 +282,35 @@ namespace Object
 
         private void OnMouseEnter()
         {
-            OnMouseTarget?.Invoke(true);
+            if (IsOwner)
+                OnMouseTarget?.Invoke(true);    
+            else
+                VisibleOutline(true);
         }
 
         private void OnMouseExit()
         {
-            OnMouseTarget?.Invoke(false);
+            if (IsOwner)
+                OnMouseTarget?.Invoke(false);
+            else
+                VisibleOutline(false);
         }
 
-        public void VisibleOutline(bool visible)
-        {
-            _outline.enabled = visible;
-        }
+        public void VisibleOutline(bool visible) => _outline.enabled = visible;
 
         #endregion
 
+        public bool IsDeath { get => SoldierData.Value.Health <= 0;}
+
+        [ServerRpc]
+        public void UpSoldierDataServerRpc(int damage = 0, int armor = 0) => SoldierData.Value = new SoldierData(SoldierData.Value.Health,
+            SoldierData.Value.Damage + damage, SoldierData.Value.Armor + armor);
+        
         public void GetDamage(int damage)
         {
-            var health = this._soldierData.Value.Health;
-            health -= damage;
-            _soldierData.Value = new SoldierData(health, _soldierData.Value.Damage, _soldierData.Value.Armor);
+            var health = this.SoldierData.Value.Health;
+            health -= (damage - SoldierData.Value.Armor) > 0 ? damage - SoldierData.Value.Armor : 1;
+            SoldierData.Value = new SoldierData(health, SoldierData.Value.Damage, SoldierData.Value.Armor);
         }
     }
 }

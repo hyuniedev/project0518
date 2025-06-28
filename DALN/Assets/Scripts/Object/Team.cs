@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace Object
 {
-    internal class Team
+    public class Team
     {
         private List<Soldier> _soliders = new List<Soldier>();
-        private Action<Vector3> OnTeamMove;
         private Action<bool> OnVisibleOutline;
         public Action<Team> OnAllSoldiersOnTeamDeath;
+        
+        private Vector3[] _destinationOffsets = {Vector3.zero, new Vector3(0.5f,0,0), new Vector3(-0.5f,0,0), new Vector3(0.25f,0,-0.5f), new Vector3(-0.25f,0,-0.5f)};
         
         public void AddSoldier(Soldier soldier)
         {
@@ -17,53 +18,50 @@ namespace Object
             soldier.OnMouseTarget += VisibleOutlineAllSoldiers;
             soldier.OnDeath += RemoveSoldier;
             soldier.OnTargetOpponent += SetOpponentTeam;
-            // soldier.SetStoppingDistance(0.5f*_soliders.Count);
-            OnTeamMove += soldier.RequestMoveTo;
             _soliders.Add(soldier);
         }
 
-        private void VisibleOutlineAllSoldiers(bool visible)
-        {
-            OnVisibleOutline?.Invoke(visible);
-        }
+        private void VisibleOutlineAllSoldiers(bool visible) => OnVisibleOutline?.Invoke(visible);
 
-        public Transform GetTransformFirstSoldier()
-        {
-            return _soliders[0].transform;
-        }
+        public Transform GetTransformFirstSoldier() => _soliders[0].transform;
 
-        public int GetNumSoldiers()
-        {
-            return _soliders.Count;
-        }
-
+        public int GetNumSoldiers() => _soliders.Count;
+        
         private void RemoveSoldier(Soldier soldier)
         {
             soldier.OnDeath -= RemoveSoldier;
             OnVisibleOutline -= soldier.VisibleOutline;
             soldier.OnMouseTarget -= VisibleOutlineAllSoldiers;
             soldier.OnTargetOpponent -= SetOpponentTeam;
-            OnTeamMove -= soldier.RequestMoveTo;
             _soliders.Remove(soldier);
-            OnAllSoldiersOnTeamDeath?.Invoke(this);
+            if(_soliders.Count==0)
+                OnAllSoldiersOnTeamDeath?.Invoke(this);
         }
 
         public void TeamMoveTo(Vector3 newPosition)
         {
-            OnTeamMove?.Invoke(newPosition);
+            for (int i = 0 ; i < _soliders.Count ; i++)
+            {
+                _soliders[i].RequestMoveTo(newPosition + _destinationOffsets[i]);
+            }
         }
 
-        public bool ContainsSoldier(Soldier soldier)
-        {
-            return _soliders.Contains(soldier);
-        }
+        public bool ContainsSoldier(Soldier soldier) => _soliders.Contains(soldier);
 
-        private void SetOpponentTeam(ulong opponentId)
+        public void SetOpponentTeam(ulong opponentId)
         {
             foreach (var soldier in _soliders)
             {
                 soldier.SetOpponentServerRpc(opponentId);
             }
         }
+
+        public void UpSoldiersValue(int damage, int armor)
+        {
+            foreach (var soldier in _soliders)
+                soldier.UpSoldierDataServerRpc(damage, armor);
+        }
+
+        public SoldierData GetSoldierData => _soliders[0].SoldierData.Value;
     }
 }

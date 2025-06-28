@@ -81,7 +81,6 @@ namespace UI
                     Debug.LogWarning("No lobby selected");
                     yield break;
                 }
-                Debug.Log("Updating lobby");
                 yield return new WaitForSeconds(1f);
             }
         }
