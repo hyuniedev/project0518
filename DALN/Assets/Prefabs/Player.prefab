@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4903448180635665845}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -71,3 +71,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  soldierPrefab: {fileID: 6847533126746357456, guid: c920192053b8cba41ac79bd026624667, type: 3}
