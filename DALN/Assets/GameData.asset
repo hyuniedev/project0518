@@ -12,13 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86dd2d53688a4ccc95dd244f85550895, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
-  initHealth: 100
+  initCountSoldierPerTeam: 5
+  initHealth: 200
   initDamage: 20
+  feeInitIncreaseDamage: 5
+  rangeFeePerIncreaseDamage: 5
+  maxTimeOfIncreaseDamage: 5
+  valuePerIncreaseDamage: 5
   initArmor: 0
-  initCountSoldierPerPlayer: 5
-  feeIncreaseDamage: 5
-  feeIncreaseArmor: 5
+  feeInitIncreaseArmor: 5
+  rangeFeePerIncreaseArmor: 5
+  maxTimeOfIncreaseArmor: 5
+  valuePerIncreaseArmor: 5
+  initSpawnCostTime: 1
+  feeInitIncreaseSpawnCostTime: 20
+  rangeFeePerIncreaseSpawnCostTime: 5
+  maxTimeOfIncreaseSpawnCostTime: 5
+  valuePerChangeSpawnCostTime: -0.1
+  feeCreateSoldierTeam: 30
   maxPlayersPerLobby: 3
+  timeOfMatch: 300
   soliderTextures:
   - {fileID: 2800000, guid: 0c743ef734d33eb44a0d35de77833ee7, type: 3}
   - {fileID: 2800000, guid: fa6655f88691b324b9000c0aedcbff5e, type: 3}
