@@ -10,7 +10,14 @@ namespace Object
         private Action<bool> OnVisibleOutline;
         public Action<Team> OnAllSoldiersOnTeamDeath;
         
+        
         private Vector3[] _destinationOffsets = {Vector3.zero, new Vector3(0.5f,0,0), new Vector3(-0.5f,0,0), new Vector3(0.25f,0,-0.5f), new Vector3(-0.25f,0,-0.5f)};
+
+        private Vector3[] _destinationOnPray =
+        {
+            new Vector3(0, 0, -5), new Vector3(-1, 0, -5), new Vector3(1, 0, -5), new Vector3(-2, 0, -5),
+            new Vector3(2, 0, -5)
+        };
         
         public void AddSoldier(Soldier soldier)
         {
@@ -38,11 +45,11 @@ namespace Object
                 OnAllSoldiersOnTeamDeath?.Invoke(this);
         }
 
-        public void TeamMoveTo(Vector3 newPosition)
+        public void TeamMoveTo(Vector3 newPosition, bool isPray = false)
         {
             for (int i = 0 ; i < _soliders.Count ; i++)
             {
-                _soliders[i].RequestMoveTo(newPosition + _destinationOffsets[i]);
+                _soliders[i].RequestMoveTo(newPosition + (isPray ? _destinationOnPray[i] : _destinationOffsets[i]),isPray);
             }
         }
 
@@ -61,7 +68,7 @@ namespace Object
             foreach (var soldier in _soliders)
                 soldier.UpSoldierDataServerRpc(damage, armor);
         }
-
+        
         public SoldierData GetSoldierData => _soliders[0].SoldierData.Value;
     }
 }

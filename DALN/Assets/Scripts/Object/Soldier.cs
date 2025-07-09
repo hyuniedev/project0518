@@ -59,6 +59,8 @@ namespace Object
         [SerializeField] private Transform gunBarrelPosition;
         private float _nextTimeShoot;
         private bool _settedDisableComponnnents = false;
+        private bool _isPray;
+        private float _timePray;
 
         #endregion
 
@@ -114,6 +116,7 @@ namespace Object
                         SetDisableComponents();
                     return;
                 }
+                Pray();
                 if (_opponentId.Value==0) return;
                 if (_target.GetComponent<Soldier>().IsDeath || Vector3.Distance(_target.transform.position, transform.position) > 10f)
                     FindOpponentUpdate();
@@ -146,11 +149,21 @@ namespace Object
         {
             ESoldierState newState;
             if (IsDeath)
+            {
                 newState = ESoldierState.Death;
+                StopPray();
+            }
             else if (CheckMoving())
+            {
                 newState = ESoldierState.Move;
+            }
             else if (_opponentId.Value != 0)
+            {
                 newState = ESoldierState.Attack;
+                StopPray();                
+            }
+            else if(_isPray)
+                newState = ESoldierState.Pray;
             else
                 newState = ESoldierState.Idle;
 
@@ -158,6 +171,32 @@ namespace Object
             {
                 _curState.Value = newState;
                 ChangeStateClientRpc(newState.ToString());                
+            }
+        }
+
+        private void StopPray()
+        {
+            if (_isPray)
+            {
+                Debug.Log("Stop Pray");
+                _isPray = false;
+                _timePray = 0;
+                FindFirstObjectByType<AngelStatue>().SetWaitPrayServerRpc(false);
+            }
+        }
+
+        private void Pray()
+        {
+            if (!_isPray || CheckMoving()) return;
+            if (_timePray < 5f)
+            {
+                _timePray += Time.deltaTime;
+            }
+            else
+            {
+                var angelStatue = FindFirstObjectByType<AngelStatue>();
+                angelStatue.RequestSetTeamIdTarget(TeamId.Value);
+                StopPray();
             }
         }
         
@@ -254,17 +293,22 @@ namespace Object
         
         #region Move
 
-        private bool CheckMoving() => _agent.remainingDistance > _agent.stoppingDistance;
+        public bool CheckMoving() => _agent.remainingDistance > _agent.stoppingDistance;
 
 
-        public void RequestMoveTo(Vector3 position)
+        public void RequestMoveTo(Vector3 position, bool isPray)
         {
             SetOpponentServerRpc(0);
-            MoveToServerRpc(position);
+            MoveToServerRpc(position, isPray);
         }
-        
+
         [ServerRpc]
-        private void MoveToServerRpc(Vector3 destination) => _agent.SetDestination(destination);
+        private void MoveToServerRpc(Vector3 destination, bool isPray)
+        {
+            _agent.SetDestination(destination);
+            _isPray = isPray;
+            _timePray = 0;
+        }
 
         #endregion
 

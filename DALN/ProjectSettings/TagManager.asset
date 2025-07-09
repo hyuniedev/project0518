@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Soldier
+  - AngelStatue
   layers:
   - Default
   - TransparentFX

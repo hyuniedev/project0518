@@ -5,6 +5,7 @@ namespace Object
         Idle,
         Move,
         Attack,
-        Death
+        Death,
+        Pray
     }
 }

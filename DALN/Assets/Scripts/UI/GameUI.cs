@@ -27,7 +27,7 @@ namespace UI
 
         private int _currentCost = 0;
         private float _spawnCostTime;
-        private bool _isOpenPanel = false;
+        public bool IsOpenPanel = false;
         
         private void Start()
         {
@@ -40,12 +40,7 @@ namespace UI
             {
                 _spawnCostTime = GameData.Instance.gameData.initSpawnCostTime;
                 StartCoroutine(IncreaseCostPerSeconds());
-                listTeamButton.onClick.AddListener(() =>
-                {
-                    Debug.Log("List team Button Clicked");
-                    _isOpenPanel = !_isOpenPanel;
-                    listTeamPanel.GetComponent<Animator>().SetBool(InAnim,_isOpenPanel);
-                });
+                listTeamButton.onClick.AddListener(UpdateStateListTeamPanel);
             }
         }
 
@@ -53,6 +48,8 @@ namespace UI
         {
             if (IsClient)
             {
+                if (Input.GetKeyDown(KeyCode.Tab)) UpdateStateListTeamPanel();
+                
                 TimeDownUpdate();
                 if (Player == null) return;
                 if (Player.Teams.Count != listTeamsParent.childCount-1)
@@ -63,6 +60,7 @@ namespace UI
                     {
                         var itemTeam = Instantiate(itemTeamPrefab, listTeamsParent);
                         itemTeam.GetComponent<TeamItem>().SetUp(team, IncreaseDamage, IncreaseArmor);
+                        itemTeam.GetComponent<Button>().onClick.AddListener(() => { Player.SelectedTeam = team;});
                     }
                     if (Player.Teams.Count < 10)
                     {
@@ -73,6 +71,12 @@ namespace UI
             }
         }
 
+        public void UpdateStateListTeamPanel()
+        {
+            IsOpenPanel = !IsOpenPanel;
+            listTeamPanel.GetComponent<Animator>().SetBool(InAnim,IsOpenPanel);
+        }
+        
         #region Update propety value
 
         public void IncreaseCostSpeed()

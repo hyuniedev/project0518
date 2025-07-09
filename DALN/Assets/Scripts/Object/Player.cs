@@ -9,6 +9,7 @@ using Unity.Cinemachine;
 using Unity.Netcode;
 using Unity.Services.Matchmaker.Models;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Object
 {
@@ -21,6 +22,8 @@ namespace Object
         private CinemachineCamera _virtualCamera;
         [SerializeField] private GameObject soldierPrefab;
 
+        private GameUI _gameUI;
+        
         private void Awake()
         {
             _camera = Camera.main;
@@ -31,7 +34,8 @@ namespace Object
         {
             base.OnNetworkSpawn();
             if (!IsOwner) return;
-            FindFirstObjectByType<GameUI>().Player = this;
+            _gameUI = FindFirstObjectByType<GameUI>();
+            _gameUI.Player = this;
             CreateNewTeam();
         }
 
@@ -88,6 +92,7 @@ namespace Object
         {
             if (Input.GetMouseButtonDown(0))
             {
+                if (CheckTargetUI()) return;
                 Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
@@ -115,12 +120,21 @@ namespace Object
         {
             if (Input.GetMouseButtonDown(1))
             {
+                if (CheckTargetUI()) return;
                 Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     if (SelectedTeam != null)
                     {
-                        if (hit.transform.TryGetComponent<Soldier>(out var soldier))
+                        if (hit.transform.CompareTag("AngelStatue"))
+                        {
+                            var angelStatue = hit.transform.GetComponent<AngelStatue>();
+                            Debug.Log($"WaitPray: {angelStatue.WaitPray.Value}");
+                            if (angelStatue.WaitPray.Value) return;
+                            angelStatue.SetWaitPrayServerRpc(true);
+                            SelectedTeam.TeamMoveTo(angelStatue.transform.position, true);   
+                        }
+                        else if (hit.transform.TryGetComponent<Soldier>(out var soldier))
                         {
                             if (soldier.TeamId.Value == PlayerData.Instance.TeamId) return;
                             SelectedTeam.SetOpponentTeam(soldier.transform.GetComponent<NetworkObject>().NetworkObjectId);
@@ -139,6 +153,14 @@ namespace Object
             _virtualCamera.LookAt = SelectedTeam.GetTransformFirstSoldier();
         }
 
+        private bool CheckTargetUI()
+        {
+            if(EventSystem.current.IsPointerOverGameObject()) return true;
+            if (_gameUI.IsOpenPanel)
+                _gameUI.UpdateStateListTeamPanel();
+            return false;
+        }
+        
         private void RemoveTeam(Team team)
         {
             team.OnAllSoldiersOnTeamDeath -= RemoveTeam;
