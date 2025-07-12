@@ -57,6 +57,8 @@ namespace Object
         private GameObject _target;
         
         [SerializeField] private Transform gunBarrelPosition;
+        [SerializeField] private MouseController mouseController;
+        
         private float _nextTimeShoot;
         private bool _settedDisableComponnnents = false;
         private bool _isPray;
@@ -94,7 +96,6 @@ namespace Object
                 _agent.enabled = false;
             }
         }
-
 
         private void Update()
         {
@@ -327,7 +328,7 @@ namespace Object
         private void OnMouseEnter()
         {
             if (IsOwner)
-                OnMouseTarget?.Invoke(true);    
+                OnMouseTarget?.Invoke(true);
             else
                 VisibleOutline(true);
         }
@@ -344,7 +345,7 @@ namespace Object
 
         #endregion
 
-        public bool IsDeath { get => SoldierData.Value.Health <= 0;}
+        public bool IsDeath => SoldierData.Value.Health <= 0;
 
         [ServerRpc]
         public void UpSoldierDataServerRpc(int damage = 0, int armor = 0) => SoldierData.Value = new SoldierData(SoldierData.Value.Health,

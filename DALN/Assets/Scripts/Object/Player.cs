@@ -21,6 +21,7 @@ namespace Object
         private Camera _camera;
         private CinemachineCamera _virtualCamera;
         [SerializeField] private GameObject soldierPrefab;
+        [SerializeField] private AngelStatue angelStatue; 
 
         private GameUI _gameUI;
         
@@ -37,6 +38,14 @@ namespace Object
             _gameUI = FindFirstObjectByType<GameUI>();
             _gameUI.Player = this;
             CreateNewTeam();
+            
+            ActionEvent.OnMove += SelectedTeamMove;
+        }
+        
+        private void OnDisable()
+        { 
+            if(!IsOwner) return;
+            ActionEvent.OnMove -= SelectedTeamMove;
         }
 
         private void Update()
@@ -74,6 +83,7 @@ namespace Object
             newTeam.OnAllSoldiersOnTeamDeath += RemoveTeam;
             Teams.Add(newTeam);
             _freeSoldier.Clear();
+            if(SelectedTeam==null) SelectedTeam = newTeam;
         }
 
         private void TargetTeamByKeyboard()
@@ -126,25 +136,36 @@ namespace Object
                 {
                     if (SelectedTeam != null)
                     {
+                        lastHitPosition = hit.point;
                         if (hit.transform.CompareTag("AngelStatue"))
                         {
-                            var angelStatue = hit.transform.GetComponent<AngelStatue>();
-                            Debug.Log($"WaitPray: {angelStatue.WaitPray.Value}");
                             if (angelStatue.WaitPray.Value) return;
                             angelStatue.SetWaitPrayServerRpc(true);
                             SelectedTeam.TeamMoveTo(angelStatue.transform.position, true);   
                         }
-                        else if (hit.transform.TryGetComponent<Soldier>(out var soldier))
-                        {
-                            if (soldier.TeamId.Value == PlayerData.Instance.TeamId) return;
-                            SelectedTeam.SetOpponentTeam(soldier.transform.GetComponent<NetworkObject>().NetworkObjectId);
-                        }
                         else
-                            SelectedTeam.TeamMoveTo(hit.point);
+                        {
+                            var colliders = Physics.OverlapSphere(hit.point, 1f);
+                            foreach (var collider in colliders)
+                            {
+                                if (collider.transform.TryGetComponent<Soldier>(out var soldier))
+                                {
+                                    if (soldier.TeamId.Value == PlayerData.Instance.TeamId) return;
+                                    SelectedTeam.SetOpponentTeam(soldier.transform.GetComponent<NetworkObject>()
+                                        .NetworkObjectId);
+                                    return;
+                                }
+                            }
+                        }
+                        ActionEvent.OnMove?.Invoke(hit.point);
+                        if(angelStatue.WaitPray.Value)
+                            angelStatue.SetWaitPrayServerRpc(false);
                     }
                 }
             }
         }
+
+        private void SelectedTeamMove(Vector3 position) => SelectedTeam.TeamMoveTo(position);
 
         private void LateUpdate()
         {
@@ -185,6 +206,13 @@ namespace Object
             {
                 _freeSoldier.Add(noj.GetComponent<Soldier>());
             }
+        }
+        
+        private Vector3 lastHitPosition;
+        void OnDrawGizmos()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(lastHitPosition, 1f);
         }
     }
 }

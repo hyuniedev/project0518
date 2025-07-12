@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Controller
 {
@@ -6,5 +7,6 @@ namespace Controller
     {
         public static Action OnJoinLobby;
         public static Action OnLeaveLobby;
+        public static Action<Vector3> OnMove;
     }    
 }
