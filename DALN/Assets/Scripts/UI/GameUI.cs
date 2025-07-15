@@ -21,10 +21,10 @@ namespace UI
         [SerializeField] private GameObject itemTeamPrefab;
         [SerializeField] private GameObject addTeamButtonPrefab;
         [SerializeField] private GameObject listTeamPanel;
+        [SerializeField] private GameObject gameOverPanel;
 
-        private NetworkVariable<int> _timeDown = new NetworkVariable<int>(300, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
+        private NetworkVariable<int> _timeDown = new NetworkVariable<int>(40, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
         private int _timeDownLocal;
-
         private int _currentCost = 0;
         private float _spawnCostTime;
         public bool IsOpenPanel = false;
@@ -38,6 +38,7 @@ namespace UI
 
             if (IsClient)
             {
+                gameOverPanel.SetActive(false);
                 _spawnCostTime = GameData.Instance.gameData.initSpawnCostTime;
                 StartCoroutine(IncreaseCostPerSeconds());
                 listTeamButton.onClick.AddListener(UpdateStateListTeamPanel);
@@ -51,6 +52,15 @@ namespace UI
                 if (Input.GetKeyDown(KeyCode.Tab)) UpdateStateListTeamPanel();
                 
                 TimeDownUpdate();
+
+                if (_timeDown.Value <= 0)
+                {
+                    StopAllCoroutines();
+                    gameOverPanel.SetActive(true);
+                    RequestDespawnSoldiersServerRpc();
+                    this.enabled = false;
+                }
+                
                 if (Player == null) return;
                 if (Player.Teams.Count != listTeamsParent.childCount-1)
                 {
@@ -69,6 +79,14 @@ namespace UI
                     }
                 }
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RequestDespawnSoldiersServerRpc()
+        {
+            var soliders = FindObjectsByType<Soldier>(FindObjectsSortMode.None);
+            foreach (var soldier in soliders)
+                soldier.GetComponent<NetworkObject>().Despawn();
         }
 
         public void UpdateStateListTeamPanel()

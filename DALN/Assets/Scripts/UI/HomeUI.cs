@@ -1,5 +1,6 @@
 using System;
 using Controller;
+using Data_Manager;
 using UnityEngine;
 using UnityEngine.UI;
 using WebSocketSharp;
@@ -14,6 +15,8 @@ namespace UI
         [SerializeField] private GameObject inputLabel;
         [SerializeField] private Button reloadButton;
         [SerializeField] private Button signOutButton;
+        [SerializeField] private InputField nameInputField;
+        [SerializeField] private Button changeNameButton;
 
         private void Start()
         {
@@ -31,11 +34,23 @@ namespace UI
                 await AccountController.Instance.SignOut();
                 UIController.Instance.ToSceneSignIn();
             });
+            changeNameButton.onClick.AddListener(async () =>
+            {
+                nameInputField.readOnly = !nameInputField.readOnly;
+                if (nameInputField.readOnly)
+                {
+                    Debug.Log($"Pre-Name: {PlayerData.Instance.Name}");
+                    PlayerData.Instance.Name = nameInputField.text;
+                    Debug.Log($"Cur-Name: {PlayerData.Instance.Name} - nameInputField.text: {nameInputField.text}");
+                    await PlayerData.Instance.SaveData();
+                }
+            });
         }
 
         private void OnEnable()
         {
             ReloadLobbies();
+            nameInputField.text = PlayerData.Instance.Name;
         }
 
         private void UpdateStateCreateNewLobbyButton()

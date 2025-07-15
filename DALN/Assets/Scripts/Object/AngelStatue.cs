@@ -13,7 +13,7 @@ namespace Object
         [SerializeField] private Image teamIcon;
         [SerializeField] private GameObject angelIcon;
         private int _curTeamId = 0;
-
+        public int WinnerId => _curTeamId;
         private void Start()
         {
             UpdateAngelStatue();

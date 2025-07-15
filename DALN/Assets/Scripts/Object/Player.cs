@@ -15,13 +15,25 @@ namespace Object
 {
     public class Player : NetworkBehaviour
     {
-        public Team SelectedTeam { get; set; } = null;
+        private Team _selectedTeam;
+
+        public Team SelectedTeam
+        {
+            get => _selectedTeam;
+            set
+            {
+                _selectedTeam = value;
+                _virtualCamera.Follow = _selectedTeam.GetTransformFirstSoldier();
+                _virtualCamera.LookAt = _selectedTeam.GetTransformFirstSoldier();
+            }
+        }
+
         public List<Team> Teams { get; } = new List<Team>();
         private List<Soldier> _freeSoldier = new List<Soldier>();
         private Camera _camera;
         private CinemachineCamera _virtualCamera;
         [SerializeField] private GameObject soldierPrefab;
-        [SerializeField] private AngelStatue angelStatue; 
+        private AngelStatue angelStatue; 
 
         private GameUI _gameUI;
         
@@ -29,6 +41,7 @@ namespace Object
         {
             _camera = Camera.main;
             _virtualCamera = FindFirstObjectByType<CinemachineCamera>();
+            angelStatue = FindFirstObjectByType<AngelStatue>();
         }
 
         public override void OnNetworkSpawn()
@@ -83,7 +96,8 @@ namespace Object
             newTeam.OnAllSoldiersOnTeamDeath += RemoveTeam;
             Teams.Add(newTeam);
             _freeSoldier.Clear();
-            if(SelectedTeam==null) SelectedTeam = newTeam;
+            if(SelectedTeam==null)
+                SelectedTeam = newTeam;
         }
 
         private void TargetTeamByKeyboard()
@@ -136,12 +150,12 @@ namespace Object
                 {
                     if (SelectedTeam != null)
                     {
-                        lastHitPosition = hit.point;
                         if (hit.transform.CompareTag("AngelStatue"))
                         {
                             if (angelStatue.WaitPray.Value) return;
                             angelStatue.SetWaitPrayServerRpc(true);
-                            SelectedTeam.TeamMoveTo(angelStatue.transform.position, true);   
+                            SelectedTeam.TeamMoveTo(angelStatue.transform.position, true);
+                            return;
                         }
                         else
                         {
@@ -158,7 +172,7 @@ namespace Object
                             }
                         }
                         ActionEvent.OnMove?.Invoke(hit.point);
-                        if(angelStatue.WaitPray.Value)
+                        if(angelStatue != null && angelStatue.WaitPray.Value)
                             angelStatue.SetWaitPrayServerRpc(false);
                     }
                 }
@@ -167,12 +181,12 @@ namespace Object
 
         private void SelectedTeamMove(Vector3 position) => SelectedTeam.TeamMoveTo(position);
 
-        private void LateUpdate()
-        {
-            if (!IsOwner || SelectedTeam == null || SelectedTeam.GetNumSoldiers() <= 0) return;
-            _virtualCamera.Follow = SelectedTeam.GetTransformFirstSoldier();
-            _virtualCamera.LookAt = SelectedTeam.GetTransformFirstSoldier();
-        }
+        // private void LateUpdate()
+        // {
+        //     if (!IsOwner || SelectedTeam == null || SelectedTeam.GetNumSoldiers() <= 0) return;
+        //     _virtualCamera.Follow = SelectedTeam.GetTransformFirstSoldier();
+        //     _virtualCamera.LookAt = SelectedTeam.GetTransformFirstSoldier();
+        // }
 
         private bool CheckTargetUI()
         {
@@ -206,13 +220,6 @@ namespace Object
             {
                 _freeSoldier.Add(noj.GetComponent<Soldier>());
             }
-        }
-        
-        private Vector3 lastHitPosition;
-        void OnDrawGizmos()
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(lastHitPosition, 1f);
         }
     }
 }

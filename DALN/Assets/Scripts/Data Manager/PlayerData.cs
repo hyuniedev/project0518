@@ -4,19 +4,21 @@ using DesignPattern;
 using Unity.Services.CloudSave;
 using Unity.Services.CloudSave.Models;
 using Unity.Services.CloudSave.Models.Data.Player;
+using UnityEngine;
 
 namespace Data_Manager
 {
     public class PlayerData : Singleton<PlayerData>
     {
-        public int TeamId{get;set;}
-        public string Name { get; set; }
+        public int TeamId { get; set; } = 0;
+        public string Name { get; set; } = "";
         public int Rank { get; set; } = 0;
 
         public async Task SaveData()
         {
             var data = new Dictionary<string,object>{{"Name",Name},{"Rank",Rank}};
             await CloudSaveService.Instance.Data.Player.SaveAsync(data);
+            Debug.Log($"SaveData: {Name}");
         }
         
         public async Task LoadData()
@@ -31,6 +33,7 @@ namespace Data_Manager
             {
                 Rank = int.Parse(rank.Value.GetAsString());
             }
+            Debug.Log($"LoadData: {data}");
         }
     }
 }

@@ -40,7 +40,7 @@ namespace DesignPattern
         {
             obj.SetActive(false);
             obj.GetComponent<NetworkObject>().Despawn(false);
-            pool.Enqueue(obj);
+            pool.Enqueue(obj); 
         }
 
         public void Dequeue(int teamId, Transform gunBarrelPosition, Vector3 direction, int damage)

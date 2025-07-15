@@ -31,7 +31,7 @@ MonoBehaviour:
   valuePerChangeSpawnCostTime: -0.1
   feeCreateSoldierTeam: 30
   maxPlayersPerLobby: 3
-  timeOfMatch: 300
+  timeOfMatch: 60
   soliderTextures:
   - {fileID: 2800000, guid: 0c743ef734d33eb44a0d35de77833ee7, type: 3}
   - {fileID: 2800000, guid: fa6655f88691b324b9000c0aedcbff5e, type: 3}
