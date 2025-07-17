@@ -109,7 +109,7 @@ namespace Controller
                             },
                             { "TeamId", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, i.ToString()) }
                         };
-                        await LobbyService.Instance.UpdatePlayerAsync(lobby.Id, AuthenticationService.Instance.PlayerId, updatePlayerOptions);
+                        await LobbyService.Instance.UpdatePlayerAsync(lobbyId, AuthenticationService.Instance.PlayerId, updatePlayerOptions);
                         break;
                     }
                 
@@ -129,7 +129,7 @@ namespace Controller
                 Debug.LogException(e);
             }
         }
-
+        
         public async Task LeaveLobby(string playerId)
         {
             try
@@ -214,7 +214,6 @@ namespace Controller
             catch (LobbyServiceException e)
             {
                 CurrentLobby = null;
-                Debug.Log($"Host đã out phòng {e.Message}");
             }
         }
         

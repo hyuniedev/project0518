@@ -23,6 +23,7 @@ namespace Object
             set
             {
                 _selectedTeam = value;
+                if (value == null) return;
                 _virtualCamera.Follow = _selectedTeam.GetTransformFirstSoldier();
                 _virtualCamera.LookAt = _selectedTeam.GetTransformFirstSoldier();
             }

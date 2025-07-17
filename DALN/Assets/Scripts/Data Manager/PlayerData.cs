@@ -18,12 +18,11 @@ namespace Data_Manager
         {
             var data = new Dictionary<string,object>{{"Name",Name},{"Rank",Rank}};
             await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-            Debug.Log($"SaveData: {Name}");
         }
         
         public async Task LoadData()
         {
-            var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { "Name" , "Rank"}, new LoadOptions(new PublicReadAccessClassOptions()));
+            var data = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { "Name" , "Rank"});
             if (data.TryGetValue("Name", out var name))
             {
                 Name = name.Value.GetAsString();
@@ -33,7 +32,6 @@ namespace Data_Manager
             {
                 Rank = int.Parse(rank.Value.GetAsString());
             }
-            Debug.Log($"LoadData: {data}");
         }
     }
 }

@@ -37,6 +37,7 @@ namespace UI
                 {
                     if(player.Id==AuthenticationService.Instance.PlayerId)
                         PlayerData.Instance.Rank = int.Parse(player.Data["Rank"].Value) + 10;
+                    _ = PlayerData.Instance.SaveData();
                     break;
                 }
             }

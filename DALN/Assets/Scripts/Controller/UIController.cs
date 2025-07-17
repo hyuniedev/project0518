@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -39,12 +40,11 @@ namespace Controller
 
         #endregion
 
-        private void Start()
+        private void OnEnable()
         {
-            ToSceneSignIn();
             StartCoroutine(WaitUnityServicesInitialized());
         }
-        
+
         private IEnumerator WaitUnityServicesInitialized()
         {
             while (!AccountController.Instance.Initialized)
@@ -56,7 +56,11 @@ namespace Controller
 
         private async Task InitScene()
         {
-            if (AccountController.Instance.SignedIn)
+            if (LobbyController.Instance.CurrentLobby != null)
+            {
+                ToSceneLobby();
+            }
+            else if (AccountController.Instance.SignedIn)
             {
                 ToSceneHome();
             }else if (AccountController.Instance.SessionTokenExists)

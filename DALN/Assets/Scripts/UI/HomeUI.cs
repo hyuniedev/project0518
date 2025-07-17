@@ -39,9 +39,7 @@ namespace UI
                 nameInputField.readOnly = !nameInputField.readOnly;
                 if (nameInputField.readOnly)
                 {
-                    Debug.Log($"Pre-Name: {PlayerData.Instance.Name}");
                     PlayerData.Instance.Name = nameInputField.text;
-                    Debug.Log($"Cur-Name: {PlayerData.Instance.Name} - nameInputField.text: {nameInputField.text}");
                     await PlayerData.Instance.SaveData();
                 }
             });

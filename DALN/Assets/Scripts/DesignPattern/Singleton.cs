@@ -14,7 +14,9 @@ namespace DesignPattern
             {
                 if (_instance == null)
                 {
-                    _instance = new GameObject(nameof(T)).AddComponent<T>();
+                    _instance = FindFirstObjectByType<T>();
+                    if(_instance==null)
+                        _instance = new GameObject(typeof(T).Name).AddComponent<T>();
                 }
                 return _instance;
             }
@@ -25,6 +27,7 @@ namespace DesignPattern
             if (_instance != null && _instance != this)
             {
                 Destroy(this.gameObject);
+                return;
             }
             _instance = this as T;
             DontDestroyOnLoad(this.gameObject);
