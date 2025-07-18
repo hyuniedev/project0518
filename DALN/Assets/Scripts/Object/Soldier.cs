@@ -249,7 +249,7 @@ namespace Object
             for(int i = 1; i <= 3 ; i++)
                 if(i!=TeamId.Value)
                     layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
-            var colliders = Physics.OverlapBox(transform.position, Vector3.one * 10f ,Quaternion.identity, layer);
+            var colliders = Physics.OverlapBox(transform.position + new Vector3(0, 0, 15f), new Vector3(22,18,15),Quaternion.identity, layer);
             if (colliders.Length > 0)
             {
                 foreach(var opponent in colliders)
@@ -294,7 +294,7 @@ namespace Object
         
         #region Move
 
-        public bool CheckMoving() => _agent.remainingDistance > _agent.stoppingDistance;
+        private bool CheckMoving() => _agent.remainingDistance > _agent.stoppingDistance;
 
 
         public void RequestMoveTo(Vector3 position, bool isPray)

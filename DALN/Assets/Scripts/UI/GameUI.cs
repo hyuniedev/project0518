@@ -23,7 +23,7 @@ namespace UI
         [SerializeField] private GameObject listTeamPanel;
         [SerializeField] private GameObject gameOverPanel;
 
-        private NetworkVariable<int> _timeDown = new NetworkVariable<int>(40, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
+        private NetworkVariable<int> _timeDown = new NetworkVariable<int>(300, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
         private int _timeDownLocal;
         private int _currentCost = 0;
         private float _spawnCostTime;

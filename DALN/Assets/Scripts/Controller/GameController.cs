@@ -11,11 +11,12 @@ namespace Controller
     public class GameController : NetworkBehaviour
     {
         [SerializeField] private GameObject playerPrefab;
-        private void Start()
+
+        public void Start()
         {
             StartCoroutine(AddListenerOnLoadComplete());
         }
-
+        
         private IEnumerator AddListenerOnLoadComplete()
         {
             while (NetworkManager.Singleton == null || NetworkManager.Singleton.SceneManager == null)
@@ -27,17 +28,22 @@ namespace Controller
         {
             if (!IsServer) return;
             if(sceneName != "GameScene") return;
-            foreach (var id in NetworkManager.Singleton.ConnectedClientsIds)
-            {
-                SpawnPlayerPrefab(id);
-            }
-            NetworkManager.Singleton.SceneManager.OnLoadComplete -= SpawnPlayerPrefabForPerPlayerConnected;
+            // foreach (var id in NetworkManager.Singleton.ConnectedClientsIds)
+            // {
+            //     SpawnPlayerPrefab(id);
+            // }
+            SpawnPlayerPrefab(playerId);
         }
 
         private void SpawnPlayerPrefab(ulong playerId)
         {
             var player = Instantiate(playerPrefab);
             player.GetComponent<NetworkObject>().SpawnWithOwnership(playerId);
+        }
+
+        private void OnDisable()
+        {
+            NetworkManager.Singleton.SceneManager.OnLoadComplete -= SpawnPlayerPrefabForPerPlayerConnected;
         }
     }
 }

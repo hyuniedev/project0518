@@ -3691,7 +3691,7 @@ MonoBehaviour:
     AngularDampingMode: 0
     RotationDamping: {x: 1, y: 1, z: 1}
     QuaternionDamping: 1
-  FollowOffset: {x: 0, y: 35, z: -30}
+  FollowOffset: {x: 0, y: 40, z: -30}
 --- !u!114 &505354161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14870,6 +14870,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8814669300901928958}
     m_Modifications:
+    - target: {fileID: 100000, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
+      propertyPath: m_Name
+      value: angelStatue
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.17
@@ -14910,6 +14914,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1231005085197122910, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 157812652
+      objectReference: {fileID: 0}
+    - target: {fileID: 1231005085197122910, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 4279807858
+      objectReference: {fileID: 0}
     - target: {fileID: 2785504921721126067, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
       propertyPath: teamIcon
       value: 
@@ -14922,17 +14934,9 @@ PrefabInstance:
       propertyPath: teamNameText
       value: 
       objectReference: {fileID: 569148118}
-    - target: {fileID: 1231005085197122910, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 157812652
-      objectReference: {fileID: 0}
-    - target: {fileID: 1231005085197122910, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 4279807858
-      objectReference: {fileID: 0}
-    - target: {fileID: 100000, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
-      propertyPath: m_Name
-      value: angelStatue
+    - target: {fileID: 7611593512634202847, guid: 7a93e07023f417142881f9ebea0e642b, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

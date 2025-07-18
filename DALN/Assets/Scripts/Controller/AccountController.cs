@@ -15,6 +15,7 @@ namespace Controller
         public bool SessionTokenExists => AuthenticationService.Instance.SessionTokenExists;
 
         public bool Initialized { get; private set; }
+        
         private async void Start()
         {
             Initialized = false;

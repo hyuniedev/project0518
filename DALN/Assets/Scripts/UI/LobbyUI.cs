@@ -21,18 +21,24 @@ namespace UI
         [SerializeField] private Button exitLobbyButton;
         [SerializeField] private GameObject itemPlayerPrefab;
         [SerializeField] private Transform playersParent;
+        [SerializeField] private Text lobbyNameText;
         
         private int _currentNumPlayers = 0;
         private Coroutine _updateUILobbyCoroutine;
         private void Start()
         {
             startGameButton.onClick.AddListener(StartGame);
+            
             exitLobbyButton.onClick.AddListener(()=>ExitLobby(AuthenticationService.Instance.PlayerId));
+            
         }
 
         private void OnEnable()
         {
             _updateUILobbyCoroutine = StartCoroutine(UpdateUILobby());
+            lobbyNameText.text = LobbyController.Instance.CurrentLobby.Name;
+            startGameButton.GetComponent<Button>().interactable = AuthenticationService.Instance.PlayerId ==
+                                                                  LobbyController.Instance.CurrentLobby.HostId;
         }
 
         private void OnDisable()

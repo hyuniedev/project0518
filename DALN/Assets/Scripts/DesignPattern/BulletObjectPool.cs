@@ -55,8 +55,8 @@ namespace DesignPattern
             {
                 bullet = Instantiate(bulletPrefab, gunBarrelPosition.position, Quaternion.identity);
             }
-            bullet.GetComponent<Bullet>().Fire(teamId, gunBarrelPosition.position, direction, damage);
             bullet.GetComponent<NetworkObject>().Spawn();
+            bullet.GetComponent<Bullet>().Fire(teamId, gunBarrelPosition.position, direction, damage);
         }
     }
 }

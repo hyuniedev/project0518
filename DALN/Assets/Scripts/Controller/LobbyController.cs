@@ -214,6 +214,7 @@ namespace Controller
             catch (LobbyServiceException e)
             {
                 CurrentLobby = null;
+                _ = e;
             }
         }
         

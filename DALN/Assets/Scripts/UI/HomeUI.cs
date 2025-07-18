@@ -1,6 +1,7 @@
 using System;
 using Controller;
 using Data_Manager;
+using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.UI;
 using WebSocketSharp;
@@ -47,8 +48,9 @@ namespace UI
 
         private void OnEnable()
         {
-            ReloadLobbies();
             nameInputField.text = PlayerData.Instance.Name;
+            if(AccountController.Instance.Initialized)
+                ReloadLobbies();
         }
 
         private void UpdateStateCreateNewLobbyButton()
