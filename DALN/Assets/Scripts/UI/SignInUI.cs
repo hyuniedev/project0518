@@ -22,8 +22,13 @@ namespace UI
 
         private async void SignIn()
         {
-            await AccountController.Instance.SignIn(usernameInput.text, passwordInput.text);
-            UIController.Instance.ToSceneHome();
+            UIController.Instance.ShowNotificationPanel("Signing in", "Wait a minute...", ()=>{});
+            var result = await AccountController.Instance.SignIn(usernameInput.text, passwordInput.text);
+            if(result)
+            {
+                UIController.Instance.ToSceneHome();
+                UIController.Instance.HideNotificationPanel();
+            }
         }
 
         private void Signup()
@@ -33,8 +38,10 @@ namespace UI
 
         private async void SigninWithAnonymous()
         {
+            UIController.Instance.ShowNotificationPanel("Signing in", "Wait a minute...", ()=>{});
             await AccountController.Instance.SignInWithAnonymous();
             UIController.Instance.ToSceneHome();
+            UIController.Instance.HideNotificationPanel();
         }
     }
 }

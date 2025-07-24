@@ -56,6 +56,9 @@ namespace Object
         private float _nextTimeCheckOpponent;
         private GameObject _target;
         
+        [SerializeField]
+        private AudioSource audioSource;
+        
         [SerializeField] private Transform gunBarrelPosition;
         [SerializeField] private MouseController mouseController;
         
@@ -106,6 +109,8 @@ namespace Object
                     _teamIdLocal = TeamId.Value;
                     UpdateTexture();
                 }
+
+                audioSource.enabled = _curState.Value == ESoldierState.Move;
             }
             if (IsServer)
             {

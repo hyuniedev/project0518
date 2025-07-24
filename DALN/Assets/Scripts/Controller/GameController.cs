@@ -28,10 +28,6 @@ namespace Controller
         {
             if (!IsServer) return;
             if(sceneName != "GameScene") return;
-            // foreach (var id in NetworkManager.Singleton.ConnectedClientsIds)
-            // {
-            //     SpawnPlayerPrefab(id);
-            // }
             SpawnPlayerPrefab(playerId);
         }
 
@@ -40,10 +36,12 @@ namespace Controller
             var player = Instantiate(playerPrefab);
             player.GetComponent<NetworkObject>().SpawnWithOwnership(playerId);
         }
-
-        private void OnDisable()
+        
+        public override void OnDestroy()
         {
-            NetworkManager.Singleton.SceneManager.OnLoadComplete -= SpawnPlayerPrefabForPerPlayerConnected;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+                NetworkManager.Singleton.SceneManager.OnLoadComplete -= SpawnPlayerPrefabForPerPlayerConnected;
+            base.OnDestroy();
         }
     }
 }

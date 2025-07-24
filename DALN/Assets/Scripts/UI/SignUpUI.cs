@@ -21,9 +21,18 @@ namespace UI
 
         private async void SignUp()
         {
-            if (passwordInput.text != repeatPasswordInput.text) return;
-            await AccountController.Instance.SignUp(usernameInput.text, passwordInput.text);
-            UIController.Instance.ToSceneHome();
+            if (passwordInput.text != repeatPasswordInput.text)
+            {
+                UIController.Instance.ShowNotificationPanel("Error", "Re-enter password does not match password.", UIController.Instance.HideNotificationPanel);
+                return;
+            }
+            UIController.Instance.ShowNotificationPanel("Signing up", "Wait a minute...", ()=>{});
+            var result = await AccountController.Instance.SignUp(usernameInput.text, passwordInput.text);
+            if(result)
+            {
+                UIController.Instance.ToSceneHome();
+                UIController.Instance.HideNotificationPanel();
+            }
         }
 
         private void BackToLogin()

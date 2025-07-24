@@ -18,6 +18,9 @@ namespace UI
         [SerializeField] private Button signOutButton;
         [SerializeField] private InputField nameInputField;
         [SerializeField] private Button changeNameButton;
+        
+        [SerializeField] private Sprite pencilSprite;
+        [SerializeField] private Sprite saveSprite;
 
         private void Start()
         {
@@ -32,16 +35,21 @@ namespace UI
             reloadButton.onClick.AddListener(ReloadLobbies);
             signOutButton.onClick.AddListener(async () =>
             {
+                UIController.Instance.ShowNotificationPanel("Signing out", "Wait a minute...", ()=>{});
                 await AccountController.Instance.SignOut();
                 UIController.Instance.ToSceneSignIn();
+                UIController.Instance.HideNotificationPanel();
             });
             changeNameButton.onClick.AddListener(async () =>
             {
-                nameInputField.readOnly = !nameInputField.readOnly;
+                nameInputField.interactable = !nameInputField.interactable;
+                changeNameButton.transform.GetChild(0).GetComponent<Image>().sprite = nameInputField.interactable?saveSprite:pencilSprite;
                 if (nameInputField.readOnly)
                 {
+                    UIController.Instance.ShowNotificationPanel("Changing name", "Wait a minute...", ()=>{});
                     PlayerData.Instance.Name = nameInputField.text;
                     await PlayerData.Instance.SaveData();
+                    UIController.Instance.HideNotificationPanel();
                 }
             });
         }
@@ -61,23 +69,33 @@ namespace UI
         
         private async void CreateNewLobby(string lobbyName)
         {
-            if (lobbyName.IsNullOrEmpty()) return;
+            if (lobbyName.IsNullOrEmpty())
+            {
+                UIController.Instance.ShowNotificationPanel("Error", "Please enter a lobby name.", UIController.Instance.HideNotificationPanel);
+                return;
+            }
+            UIController.Instance.ShowNotificationPanel("Creating lobby", "Wait a minute...", ()=>{});
+            lobbyName = lobbyName.Trim();
             var item = Instantiate(itemLobbyPrefab, lobbiesParent);
             item.GetComponentInChildren<Text>().text = lobbyName;
             var lobby = await LobbyController.Instance.CreateLobby(lobbyName);
             if(lobby == null) return;
             item.GetComponentInChildren<Button>().onClick.AddListener(()=>JoinLobby(lobby.Id));
             UIController.Instance.ToSceneLobby();
+            UIController.Instance.HideNotificationPanel();
         }
 
         private async void JoinLobby(string lobbyId)
         {
+            UIController.Instance.ShowNotificationPanel("Joining lobby", "Wait a minute...", ()=>{});
             await LobbyController.Instance.JoinLobby(lobbyId);
             UIController.Instance.ToSceneLobby();
+            UIController.Instance.HideNotificationPanel();
         }
 
         private async void ReloadLobbies()
         {
+            UIController.Instance.ShowNotificationPanel("Loading lobbies", "Wait a minute...", ()=>{});
             var ls = await LobbyController.Instance.FetchLobbies();
             foreach (Transform child in lobbiesParent)
                 Destroy(child.gameObject);
@@ -87,6 +105,7 @@ namespace UI
                 item.GetComponentInChildren<Text>().text = l.Name;
                 item.GetComponentInChildren<Button>().onClick.AddListener(()=>JoinLobby(l.Id));
             }
+            UIController.Instance.HideNotificationPanel();
         }
     }    
 }

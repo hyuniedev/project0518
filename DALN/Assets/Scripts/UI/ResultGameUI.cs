@@ -57,9 +57,9 @@ namespace UI
                 if (player.Data.TryGetValue("Rank", out var rankPlayer))
                 {
                     if(int.Parse(player.Data["TeamId"].Value) == winnerId)
-                        item.transform.GetChild(1).GetComponent<Text>().text = (int.Parse(rankPlayer.Value) + 10).ToString();
+                        item.transform.GetChild(1).GetComponent<Text>().text = "Rank: " + (int.Parse(rankPlayer.Value) + 10).ToString();
                     else
-                        item.transform.GetChild(1).GetComponent<Text>().text = rankPlayer.Value;
+                        item.transform.GetChild(1).GetComponent<Text>().text = "Rank: " + rankPlayer.Value;
                 }
             }
         }

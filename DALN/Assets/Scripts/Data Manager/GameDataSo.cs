@@ -31,9 +31,8 @@ namespace Data_Manager
         public int feeCreateSoldierTeam = 30;
         public int maxPlayersPerLobby = 3;
 
-        public int timeOfMatch = 300;
         public List<Texture> soliderTextures = new List<Texture>();
-        
+
         public Dictionary<int, Vector3> TeamInitialPosition = new Dictionary<int, Vector3>()
         {
             { 1, new Vector3(53.5f, 9.5f, 72.5f) },

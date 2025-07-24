@@ -24,11 +24,12 @@ namespace UI
             }
         }
 
-        public void SetUp(Team team, Action<Team> onUpDamage, Action<Team> onUpArmor)
+        public void SetUp(Team team,string nameTeam ,Action<Team> onUpDamage, Action<Team> onUpArmor)
         {
             _team = team;
             upDamageBtn.onClick.AddListener(() => onUpDamage?.Invoke(team));
             upArmorBtn.onClick.AddListener(() => onUpArmor?.Invoke(team));
+            teamName.text = nameTeam;
         }
     }
 }

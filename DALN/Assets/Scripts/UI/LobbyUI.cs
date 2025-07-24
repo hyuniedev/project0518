@@ -88,7 +88,7 @@ namespace UI
                             _ = LobbyService.Instance.UpdatePlayerAsync(LobbyController.Instance.CurrentLobby.Id, player.Id, upo);
                             rankPlayer.Value = PlayerData.Instance.Rank.ToString();
                         }
-                        item.transform.GetChild(1).GetComponent<Text>().text = rankPlayer.Value;
+                        item.transform.GetChild(1).GetComponent<Text>().text = "Rank: " + rankPlayer.Value;
                     }
                     var button = item.transform.GetChild(2).GetComponent<Button>();
                     if (LobbyController.Instance.CurrentLobby.HostId == AuthenticationService.Instance.PlayerId)
@@ -108,8 +108,10 @@ namespace UI
         
         private async void ExitLobby(string playerId)
         {
+            UIController.Instance.ShowNotificationPanel("Exiting lobby", "Wait a minute...", ()=>{});
             await LobbyController.Instance.LeaveLobby(playerId);
             UIController.Instance.ToSceneHome();
+            UIController.Instance.HideNotificationPanel();
         }
     }
 }

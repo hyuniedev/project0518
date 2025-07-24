@@ -1,4 +1,5 @@
 using System;
+using Controller;
 using DesignPattern;
 using Unity.Netcode;
 using UnityEngine;
@@ -39,7 +40,8 @@ namespace Object
 
         public void Fire(int teamId, Vector3 position ,Vector3 direction, int damage)
         {
-            Debug.Log($"IsServer: {IsServer}");
+            if(IsClient) AudioController.Instance.Play("Shot",position);
+
             if (!IsServer) return;
             this._teamId = teamId;
             this._direction.Value = direction;

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Controller
 {
@@ -11,7 +12,13 @@ namespace Controller
         [SerializeField] private GameObject lobbyPanel;
         [SerializeField] private GameObject signinPanel;
         [SerializeField] private GameObject signUpPanel;
+        [SerializeField] private GameObject notificationPanel;
 
+        private Transform _parent;
+        private Text _title;
+        private Text _message;
+        private Button _confirmButton;
+        
         #region Setup Singleton
 
         private static UIController _instance;
@@ -22,7 +29,9 @@ namespace Controller
             {
                 if (_instance == null)
                 {
-                    _instance = new GameObject("UI Controller").AddComponent<UIController>();
+                    _instance = FindFirstObjectByType<UIController>();
+                    if(_instance==null)
+                        _instance = new GameObject("UI Controller").AddComponent<UIController>();
                 }
                 return _instance;
             }
@@ -72,6 +81,11 @@ namespace Controller
             {
                 ToSceneSignIn();
             }
+            AudioController.Instance.Play("BackgroundMusic_HomeScene", Vector3.zero);
+            _parent = notificationPanel.transform.GetChild(0);
+            _title = _parent.GetChild(0).GetComponent<Text>();
+            _message = _parent.GetChild(1).GetComponent<Text>();
+            _confirmButton = _parent.GetChild(2).GetComponent<Button>();
         }
 
         public void ToSceneSignIn()
@@ -104,6 +118,42 @@ namespace Controller
             homePanel.SetActive(false);
             lobbyPanel.SetActive(true);
             signinPanel.SetActive(false);
+        }
+
+        public void ShowNotificationPanel(string title, string message, Action onConfirm)
+        {
+            notificationPanel.SetActive(true);
+            try
+            {
+                _title.text = title;
+                _message.text = message;
+                _confirmButton.onClick.RemoveAllListeners();
+                _confirmButton.onClick.AddListener(() =>
+                {
+                    onConfirm?.Invoke();
+                });
+            }
+            catch (Exception _)
+            {
+                _parent = notificationPanel.transform.GetChild(0);
+                _title = _parent.GetChild(0).GetComponent<Text>();
+                _message = _parent.GetChild(1).GetComponent<Text>();
+                _confirmButton = _parent.GetChild(2).GetComponent<Button>();
+                
+                _title.text = title;
+                _message.text = message;
+                _confirmButton.onClick.RemoveAllListeners();
+                _confirmButton.onClick.AddListener(() =>
+                {
+                    onConfirm?.Invoke();
+                    notificationPanel.SetActive(false);
+                });
+            }
+        }
+
+        public void HideNotificationPanel()
+        {
+            notificationPanel.SetActive(false);
         }
     }
 }

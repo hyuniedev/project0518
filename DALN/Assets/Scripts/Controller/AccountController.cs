@@ -29,15 +29,33 @@ namespace Controller
             AuthenticationService.Instance.SignOut();
         }
 
-        public async Task SignUp(string username, string password)
+        public async Task<bool> SignUp(string username, string password)
         {
-            await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
+            try
+            {
+                await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
+                return true;
+            }
+            catch (Exception e)
+            {
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{});
+                return false;
+            }
         }
 
-        public async Task SignIn(string username, string password)
+        public async Task<bool> SignIn(string username, string password)
         {
-            await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
-            await PlayerData.Instance.LoadData();
+            try
+            {
+                await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
+                await PlayerData.Instance.LoadData();
+                return true;
+            }
+            catch (Exception e)
+            {
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{});
+                return false;
+            }
         }
 
         public async Task SignInWithAnonymous()

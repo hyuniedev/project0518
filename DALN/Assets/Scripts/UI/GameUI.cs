@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Controller;
 using Data_Manager;
 using Object;
 using Unity.Netcode;
@@ -66,10 +67,12 @@ namespace UI
                 {
                     foreach (Transform item in listTeamsParent)
                         Destroy(item.gameObject);
+                    int index = 0;
                     foreach (var team in Player.Teams)
                     {
+                        index++;
                         var itemTeam = Instantiate(itemTeamPrefab, listTeamsParent);
-                        itemTeam.GetComponent<TeamItem>().SetUp(team, IncreaseDamage, IncreaseArmor);
+                        itemTeam.GetComponent<TeamItem>().SetUp(team, $"Team {index}" ,IncreaseDamage, IncreaseArmor);
                         itemTeam.GetComponent<Button>().onClick.AddListener(() => { Player.SelectedTeam = team;});
                     }
                     if (Player.Teams.Count < 10)
@@ -128,6 +131,7 @@ namespace UI
             _currentCost -= feeUpgrade;
             UpSoldiersValueOnTeam(team,damage: GameData.Instance.gameData.valuePerIncreaseDamage);
             UpdateCostTxt();
+            AudioController.Instance.Play("Coin",Vector3.zero);
         }
         
         private void IncreaseArmor(Team team)
@@ -144,6 +148,7 @@ namespace UI
             _currentCost -= feeUpgrade;
             UpSoldiersValueOnTeam(team,armor: GameData.Instance.gameData.valuePerIncreaseArmor);
             UpdateCostTxt();
+            AudioController.Instance.Play("Coin",Vector3.zero);
         }
 
         private void CreateNewTeam()
