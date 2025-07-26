@@ -50,17 +50,18 @@ namespace UI
             foreach (var player in lobby.Players)
             {
                 var item = Instantiate(itemPrefab, parentContent);
+                string name = "";
+                int rank = 0;
+                bool isWinner = int.Parse(player.Data["TeamId"].Value) == winnerId;
                 if (player.Data.TryGetValue("Name", out var namePlayer))
                 {
-                    item.transform.GetChild(0).GetComponent<Text>().text = namePlayer.Value;
+                    name = namePlayer.Value;
                 }
                 if (player.Data.TryGetValue("Rank", out var rankPlayer))
                 {
-                    if(int.Parse(player.Data["TeamId"].Value) == winnerId)
-                        item.transform.GetChild(1).GetComponent<Text>().text = "Rank: " + (int.Parse(rankPlayer.Value) + 10).ToString();
-                    else
-                        item.transform.GetChild(1).GetComponent<Text>().text = "Rank: " + rankPlayer.Value;
+                    rank = int.Parse(rankPlayer.Value);
                 }
+                item.GetComponent<ResultItem>().SetUp(isWinner, name, rank);
             }
         }
     }

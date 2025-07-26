@@ -63,7 +63,7 @@ namespace Controller
             }
             catch (LobbyServiceException e)
             {
-                Debug.LogException(e);
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message, () => {UIController.Instance.HideNotificationPanel(); });
             }
             return null;
         }
@@ -84,7 +84,6 @@ namespace Controller
                         })
                 };
                 Lobby lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, options);
-                
                 // Setup PlayerData
                 List<int> teamIdInLobby = new List<int>();
                 foreach (var player in lobby.Players)
@@ -126,7 +125,7 @@ namespace Controller
             }
             catch (LobbyServiceException e)
             {
-                Debug.LogException(e);
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message, () => {UIController.Instance.HideNotificationPanel(); });
             }
         }
         
@@ -182,7 +181,7 @@ namespace Controller
             }
             catch (LobbyServiceException e)
             {
-                Debug.LogException(e);
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message, () => {UIController.Instance.HideNotificationPanel(); }); 
             }
         }
 

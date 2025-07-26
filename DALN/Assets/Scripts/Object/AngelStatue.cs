@@ -1,4 +1,5 @@
 using System;
+using Controller;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +27,7 @@ namespace Object
             if (_teamIdTarget.Value == 0 || _teamIdTarget.Value == _curTeamId) return;
             _curTeamId = _teamIdTarget.Value;
             UpdateAngelStatue();
+            AudioController.Instance.Play("PrayCompleted", Vector3.zero);
         }
 
         private void UpdateAngelStatue()

@@ -24,12 +24,17 @@ namespace UI
         [SerializeField] private GameObject listTeamPanel;
         [SerializeField] private GameObject gameOverPanel;
 
-        private NetworkVariable<int> _timeDown = new NetworkVariable<int>(300, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
+        private NetworkVariable<int> _timeDown { get; set; }
         private int _timeDownLocal;
         private int _currentCost = 0;
         private float _spawnCostTime;
         public bool IsOpenPanel = false;
-        
+
+        public void Awake()
+        {
+            _timeDown = new NetworkVariable<int>(GameData.Instance.gameData.timeMatch, NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
+        }
+
         private void Start()
         {
             if (IsServer)

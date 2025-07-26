@@ -34,11 +34,14 @@ namespace Controller
             try
             {
                 await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
+                GameData.Instance.SaveSessionData(false);
+                PlayerData.Instance.Name = username;
+                await PlayerData.Instance.SaveData();
                 return true;
             }
             catch (Exception e)
             {
-                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{});
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{UIController.Instance.HideNotificationPanel();});
                 return false;
             }
         }
@@ -49,16 +52,25 @@ namespace Controller
             {
                 await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
                 await PlayerData.Instance.LoadData();
+                GameData.Instance.SaveSessionData(false);
                 return true;
             }
             catch (Exception e)
             {
-                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{});
+                UIController.Instance.ShowNotificationPanel("Error: ", e.Message , ()=>{UIController.Instance.HideNotificationPanel();});
                 return false;
             }
         }
 
         public async Task SignInWithAnonymous()
+        {
+            if (!GameData.Instance.PreviousSessionIsAnonymous()) AuthenticationService.Instance.ClearSessionToken();
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            await PlayerData.Instance.LoadData();
+            GameData.Instance.SaveSessionData(true);
+        }
+
+        public async Task SignInWithPreviousSession()
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
             await PlayerData.Instance.LoadData();

@@ -13,9 +13,6 @@ namespace Controller
         [SerializeField] private SoundSo soundSo;
         [SerializeField] private AudioSource audioSourcePrefab;
         
-        public int SfxVolume { get; set; } = 100;
-        public int BgmVolume { get; set; } = 100;
-        
         private Queue<AudioSource> audioSourcePool = new Queue<AudioSource>();
 
         private IEnumerator Enqueue(AudioSource audioSource, float length)
@@ -28,7 +25,6 @@ namespace Controller
         public void Play(string nameAudio, Vector3 position)
         {
             AudioSource audioSource;
-            Debug.Log("Called");
             if (audioSourcePool.Count == 0)
             {
                 audioSource = Instantiate(audioSourcePrefab, position, Quaternion.identity);;
@@ -38,21 +34,19 @@ namespace Controller
                 audioSource = audioSourcePool.Dequeue();
                 audioSource.gameObject.SetActive(true);
             }
-            Debug.Log("Instantiated");
             var sound = GetSound(nameAudio);
-            Debug.Log(sound != null);
             audioSource.clip = sound.clip;
             var length = audioSource.clip.length;
             if (sound.type == SoundType.Music)
             {
-                audioSource.volume = BgmVolume / 100f;
+                audioSource.volume = GameData.Instance.GetVolume(SoundType.Music) / 100f;
                 audioSource.spatialBlend = 0f;
             }
             else
             {
-                audioSource.volume = SfxVolume / 100f;
+                audioSource.volume = GameData.Instance.GetVolume(SoundType.Sfx) / 100f;
                 StartCoroutine(Enqueue(audioSource, length));
-                audioSource.spatialBlend = 1f;
+                audioSource.spatialBlend = nameAudio.Equals("Coin")||nameAudio.Equals("PrayCompleted")?0f:1f;
             }
             audioSource.loop = sound.type == SoundType.Music;
             audioSource.Play();

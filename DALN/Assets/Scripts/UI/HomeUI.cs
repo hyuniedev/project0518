@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Controller;
 using Data_Manager;
 using Unity.Services.Authentication;
@@ -18,6 +19,7 @@ namespace UI
         [SerializeField] private Button signOutButton;
         [SerializeField] private InputField nameInputField;
         [SerializeField] private Button changeNameButton;
+        [SerializeField] private Text rankText;
         
         [SerializeField] private Sprite pencilSprite;
         [SerializeField] private Sprite saveSprite;
@@ -42,25 +44,31 @@ namespace UI
             });
             changeNameButton.onClick.AddListener(async () =>
             {
-                nameInputField.interactable = !nameInputField.interactable;
-                changeNameButton.transform.GetChild(0).GetComponent<Image>().sprite = nameInputField.interactable?saveSprite:pencilSprite;
-                if (nameInputField.readOnly)
+                if (nameInputField.interactable)
                 {
                     UIController.Instance.ShowNotificationPanel("Changing name", "Wait a minute...", ()=>{});
                     PlayerData.Instance.Name = nameInputField.text;
                     await PlayerData.Instance.SaveData();
                     UIController.Instance.HideNotificationPanel();
                 }
+                nameInputField.interactable = !nameInputField.interactable;
+                changeNameButton.transform.GetChild(0).GetComponent<Image>().sprite = nameInputField.interactable?saveSprite:pencilSprite;
             });
         }
 
         private void OnEnable()
         {
-            nameInputField.text = PlayerData.Instance.Name;
+            InitShowNameAndRank();
             if(AccountController.Instance.Initialized)
                 ReloadLobbies();
         }
 
+        public void InitShowNameAndRank()
+        {
+            nameInputField.text = PlayerData.Instance.Name;
+            rankText.text = "Rank: " + PlayerData.Instance.Rank;
+        }
+        
         private void UpdateStateCreateNewLobbyButton()
         {
             inputLabel.SetActive(!inputLabel.activeSelf);
@@ -89,8 +97,16 @@ namespace UI
         {
             UIController.Instance.ShowNotificationPanel("Joining lobby", "Wait a minute...", ()=>{});
             await LobbyController.Instance.JoinLobby(lobbyId);
-            UIController.Instance.ToSceneLobby();
             UIController.Instance.HideNotificationPanel();
+            if(LobbyController.Instance.CurrentLobby != null) UIController.Instance.ToSceneLobby();
+            else
+            {
+                UIController.Instance.ShowNotificationPanel("Error", "Lobby is full.", () =>
+                {
+                    UIController.Instance.HideNotificationPanel();
+                    ReloadLobbies();
+                });
+            }
         }
 
         private async void ReloadLobbies()
@@ -103,7 +119,16 @@ namespace UI
             {
                 var item = Instantiate(itemLobbyPrefab, lobbiesParent);
                 item.GetComponentInChildren<Text>().text = l.Name;
-                item.GetComponentInChildren<Button>().onClick.AddListener(()=>JoinLobby(l.Id));
+                item.GetComponentInChildren<Button>().onClick.AddListener(() =>
+                {
+                    if (l.Players.Count >= l.MaxPlayers)
+                    {
+                        UIController.Instance.ShowNotificationPanel("Error", "Lobby is full.", UIController.Instance.HideNotificationPanel);
+                        return;
+                    }
+                    JoinLobby(l.Id);
+                });
+                item.transform.GetChild(1).GetChild(1).GetComponent<Text>().text = $"{l.Players.Count}/{GameData.Instance.gameData.maxPlayersPerLobby}";
             }
             UIController.Instance.HideNotificationPanel();
         }

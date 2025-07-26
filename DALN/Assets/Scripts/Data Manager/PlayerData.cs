@@ -27,10 +27,18 @@ namespace Data_Manager
             {
                 Name = name.Value.GetAsString();
             }
+            else
+            {
+                Name = "Anonymous";
+            }
 
             if (data.TryGetValue("Rank", out var rank))
             {
                 Rank = int.Parse(rank.Value.GetAsString());
+            }
+            else
+            {
+                Rank = 0;
             }
         }
     }

@@ -45,6 +45,11 @@ namespace Controller
             }
 
             _instance = this;
+            
+            _parent = notificationPanel.transform.GetChild(0);
+            _title = _parent.GetChild(0).GetComponent<Text>();
+            _message = _parent.GetChild(1).GetComponent<Text>();
+            _confirmButton = _parent.GetChild(2).GetComponent<Button>();
         }
 
         #endregion
@@ -74,18 +79,13 @@ namespace Controller
                 ToSceneHome();
             }else if (AccountController.Instance.SessionTokenExists)
             {
-                await AccountController.Instance.SignInWithAnonymous();
+                await AccountController.Instance.SignInWithPreviousSession();
                 ToSceneHome();
             }
             else
             {
                 ToSceneSignIn();
             }
-            AudioController.Instance.Play("BackgroundMusic_HomeScene", Vector3.zero);
-            _parent = notificationPanel.transform.GetChild(0);
-            _title = _parent.GetChild(0).GetComponent<Text>();
-            _message = _parent.GetChild(1).GetComponent<Text>();
-            _confirmButton = _parent.GetChild(2).GetComponent<Button>();
         }
 
         public void ToSceneSignIn()
@@ -109,7 +109,7 @@ namespace Controller
             signinPanel.SetActive(false);
             homePanel.SetActive(true);
             lobbyPanel.SetActive(false);
-            signinPanel.SetActive(false);
+            signUpPanel.SetActive(false);
         }
 
         public void ToSceneLobby()
@@ -123,32 +123,13 @@ namespace Controller
         public void ShowNotificationPanel(string title, string message, Action onConfirm)
         {
             notificationPanel.SetActive(true);
-            try
+            _title.text = title;
+            _message.text = message;
+            _confirmButton.onClick.RemoveAllListeners();
+            _confirmButton.onClick.AddListener(() =>
             {
-                _title.text = title;
-                _message.text = message;
-                _confirmButton.onClick.RemoveAllListeners();
-                _confirmButton.onClick.AddListener(() =>
-                {
-                    onConfirm?.Invoke();
-                });
-            }
-            catch (Exception _)
-            {
-                _parent = notificationPanel.transform.GetChild(0);
-                _title = _parent.GetChild(0).GetComponent<Text>();
-                _message = _parent.GetChild(1).GetComponent<Text>();
-                _confirmButton = _parent.GetChild(2).GetComponent<Button>();
-                
-                _title.text = title;
-                _message.text = message;
-                _confirmButton.onClick.RemoveAllListeners();
-                _confirmButton.onClick.AddListener(() =>
-                {
-                    onConfirm?.Invoke();
-                    notificationPanel.SetActive(false);
-                });
-            }
+                onConfirm?.Invoke();
+            });
         }
 
         public void HideNotificationPanel()

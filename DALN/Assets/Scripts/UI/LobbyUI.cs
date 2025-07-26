@@ -48,6 +48,11 @@ namespace UI
 
         private void StartGame()
         {
+            if (LobbyController.Instance.CurrentLobby.Players.Count < 2)
+            {
+                UIController.Instance.ShowNotificationPanel("Error", "Not enough players", () => {UIController.Instance.HideNotificationPanel(); });
+                return;
+            }
             LobbyController.Instance.StartGame();
         }
 
@@ -110,6 +115,7 @@ namespace UI
         {
             UIController.Instance.ShowNotificationPanel("Exiting lobby", "Wait a minute...", ()=>{});
             await LobbyController.Instance.LeaveLobby(playerId);
+            StopCoroutine(_updateUILobbyCoroutine);
             UIController.Instance.ToSceneHome();
             UIController.Instance.HideNotificationPanel();
         }
