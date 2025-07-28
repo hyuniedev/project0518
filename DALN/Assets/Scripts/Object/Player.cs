@@ -24,6 +24,8 @@ namespace Object
             {
                 _selectedTeam = value;
                 if (value == null) return;
+                var firstSoldier = value.GetTransformFirstSoldier();
+                if (firstSoldier == null) return;
                 _virtualCamera.Follow = _selectedTeam.GetTransformFirstSoldier();
                 _virtualCamera.LookAt = _selectedTeam.GetTransformFirstSoldier();
             }
@@ -90,6 +92,7 @@ namespace Object
                 yield return null;
             }
             var newTeam = new Team();
+            newTeam.CameraFollowTeamUpdateCallback(FollowCameraUpdate);
             foreach (var soldier in _freeSoldier)
             {
                 newTeam.AddSoldier(soldier);
@@ -178,6 +181,9 @@ namespace Object
                     }
                 }
             }
+            if(Input.GetKeyDown(KeyCode.Space))
+                if(SelectedTeam!=null)
+                    SelectedTeam.TeamMoveTo(SelectedTeam.GetTransformFirstSoldier().position);
         }
 
         private void SelectedTeamMove(Vector3 position) => SelectedTeam.TeamMoveTo(position);
@@ -188,6 +194,15 @@ namespace Object
         //     _virtualCamera.Follow = SelectedTeam.GetTransformFirstSoldier();
         //     _virtualCamera.LookAt = SelectedTeam.GetTransformFirstSoldier();
         // }
+
+        private void FollowCameraUpdate(Team team)
+        {
+            if(team == null) return;
+            if (team == SelectedTeam)
+            {
+                SelectedTeam = team;
+            }
+        }
 
         private bool CheckTargetUI()
         {
@@ -206,7 +221,7 @@ namespace Object
         [ServerRpc]
         private void RequestSpawnSoldierServerRpc(int teamId, ServerRpcParams rpcParams = default)
         {
-            var go = Instantiate(soldierPrefab, GameData.Instance.gameData.TeamInitialPosition[teamId], Quaternion.identity);
+            var go = Instantiate(soldierPrefab, GameData.Instance.gameData.TeamInitialPosition[teamId-1], Quaternion.identity);
             Soldier soldier = go.GetComponent<Soldier>();
             soldier.GetComponent<NetworkObject>().SpawnWithOwnership(rpcParams.Receive.SenderClientId);
             soldier.TeamId.Value = teamId;

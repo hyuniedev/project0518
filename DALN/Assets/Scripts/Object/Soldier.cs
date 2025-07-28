@@ -56,17 +56,17 @@ namespace Object
         private float _nextTimeCheckOpponent;
         private GameObject _target;
         
-        [SerializeField]
-        private AudioSource audioSource;
-        
         [SerializeField] private Transform gunBarrelPosition;
+        [SerializeField] private Transform headPosition;
         [SerializeField] private MouseController mouseController;
+        
+        private AudioSource _audioSource;
         
         private float _nextTimeShoot;
         private bool _settedDisableComponnnents = false;
         private bool _isPray;
         private float _timePray;
-
+        private int layerHouse;
         #endregion
 
         private void Awake()
@@ -74,8 +74,9 @@ namespace Object
             _agent = GetComponent<NavMeshAgent>();
             _animator = transform.GetChild(0).GetComponent<Animator>();
             _outline = transform.GetChild(0).GetComponent<Outline>();
+            _audioSource = GetComponentInChildren<AudioSource>();
             _outline.enabled = false;
-
+            layerHouse = 1 << LayerMask.NameToLayer("House");
             if (GameData.Instance != null)
             {
                 SoldierData = new NetworkVariable<SoldierData>(
@@ -110,7 +111,7 @@ namespace Object
                     UpdateTexture();
                 }
 
-                audioSource.enabled = _curState.Value == ESoldierState.Move;
+                _audioSource.enabled = _curState.Value == ESoldierState.Move;
             }
             if (IsServer)
             {
@@ -124,7 +125,7 @@ namespace Object
                 }
                 Pray();
                 if (_opponentId.Value==0) return;
-                if (_target.GetComponent<Soldier>().IsDeath || Vector3.Distance(_target.transform.position, transform.position) > 10f)
+                if (_target.GetComponent<Soldier>().IsDeath || Vector3.Distance(_target.transform.position, transform.position) > 1f)
                     FindOpponentUpdate();
                 LookToOpponent();
                 if (_nextTimeShoot < Time.time && _target != null && !_target.GetComponent<Soldier>().IsDeath)
@@ -243,7 +244,7 @@ namespace Object
 
         private void AttackOpponent()
         {
-            var direction = _target.transform.position - transform.position;
+            var direction = _target.transform.position + new Vector3(0,1.5f,0) - gunBarrelPosition.position;
             direction.Normalize();
             BulletObjectPool.Instance.Dequeue(TeamId.Value, gunBarrelPosition, direction, SoldierData.Value.Damage);
         }
@@ -254,14 +255,20 @@ namespace Object
             for(int i = 1; i <= 3 ; i++)
                 if(i!=TeamId.Value)
                     layer |= 1 << LayerMask.NameToLayer($"Soldier{i}");
-            var colliders = Physics.OverlapBox(transform.position + new Vector3(0, 0, 15f), new Vector3(22,18,15),Quaternion.identity, layer);
+            var colliders = Physics.OverlapBox(transform.position, new Vector3(22,18,15),Quaternion.identity, layer);
             if (colliders.Length > 0)
             {
                 foreach(var opponent in colliders)
                 {
                     if (opponent.GetComponent<Soldier>().TeamId.Value != TeamId.Value)
                     {
-                        return opponent.gameObject;
+                        Vector3 headOpponent = opponent.transform.position + new Vector3(0, 1.5f, 0);
+                        var direction = headOpponent - headPosition.position;
+                        if (!Physics.Raycast(headPosition.position, direction,
+                                Vector3.Distance(headPosition.position, headOpponent), layerHouse))
+                        {
+                                return opponent.gameObject;
+                        }
                     }
                 }
             }
@@ -284,13 +291,12 @@ namespace Object
             }
             else if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(opponentId, out var objNetwork))
             {
-                var direction = objNetwork.transform.position - transform.position;
-                var layer = 1 << LayerMask.NameToLayer("House");
-                if (!Physics.Raycast(transform.position + Vector3.up, direction , Vector3.Distance(transform.position,objNetwork.transform.position),layer))
+                Vector3 headOpponent = objNetwork.transform.position + new Vector3(0, 1.5f, 0);
+                var direction = headOpponent - headPosition.position;
+                if (!Physics.Raycast(headPosition.position, direction , Vector3.Distance(headPosition.position,headOpponent),layerHouse))
                 {
                     _opponentId.Value = opponentId;
                     _target = objNetwork.gameObject;    
-                    Debug.DrawRay(transform.position + Vector3.up, direction * Vector3.Distance(transform.position,_target.transform.position), Color.red, 1f);
                 }
             }
         }

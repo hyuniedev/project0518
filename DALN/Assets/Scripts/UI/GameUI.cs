@@ -23,6 +23,10 @@ namespace UI
         [SerializeField] private GameObject addTeamButtonPrefab;
         [SerializeField] private GameObject listTeamPanel;
         [SerializeField] private GameObject gameOverPanel;
+        [SerializeField] private Button decTimeDownButton;
+        [SerializeField] private Text feeUpTimeSpeed;
+        [SerializeField] private Text timeDownSpeed;
+        [SerializeField] private GameObject settingPanel;
 
         private NetworkVariable<int> _timeDown { get; set; }
         private int _timeDownLocal;
@@ -48,6 +52,12 @@ namespace UI
                 _spawnCostTime = GameData.Instance.gameData.initSpawnCostTime;
                 StartCoroutine(IncreaseCostPerSeconds());
                 listTeamButton.onClick.AddListener(UpdateStateListTeamPanel);
+                decTimeDownButton.onClick.AddListener(()=>
+                {
+                    IncreaseCostSpeed();
+                    feeUpTimeSpeed.text = $"-{NextFreeIncrementTimeDown()}$";
+                });
+                settingButton.onClick.AddListener(()=>settingPanel.SetActive(true));
             }
         }
 
@@ -56,7 +66,7 @@ namespace UI
             if (IsClient)
             {
                 if (Input.GetKeyDown(KeyCode.Tab)) UpdateStateListTeamPanel();
-                
+                if(Input.GetKeyDown(KeyCode.Escape)) settingPanel.SetActive(!settingPanel.activeSelf);
                 TimeDownUpdate();
 
                 if (_timeDown.Value <= 0)
@@ -119,7 +129,21 @@ namespace UI
             if (_currentCost < feeUpgrade) return;
             _currentCost -= (int)feeUpgrade;
             _spawnCostTime += GameData.Instance.gameData.valuePerChangeSpawnCostTime;
+            timeDownSpeed.text = $"{Mathf.Round(_spawnCostTime * 10f)/10f}$/s";
             UpdateCostTxt();
+            AudioController.Instance.Play("Coin",Vector3.zero);
+        }
+
+        private float NextFreeIncrementTimeDown()
+        {
+            var maxDecTime = GameData.Instance.gameData.initSpawnCostTime +
+                             GameData.Instance.gameData.valuePerChangeSpawnCostTime *
+                             GameData.Instance.gameData.maxTimeOfIncreaseSpawnCostTime;
+            if (_spawnCostTime - maxDecTime < 0.1f) return 0;
+            return GameData.Instance.gameData.feeInitIncreaseSpawnCostTime + 
+                             (_spawnCostTime - GameData.Instance.gameData.initSpawnCostTime) /
+                             GameData.Instance.gameData.valuePerChangeSpawnCostTime *
+                             GameData.Instance.gameData.rangeFeePerIncreaseSpawnCostTime;
         }
 
         private void IncreaseDamage(Team team)

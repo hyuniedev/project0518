@@ -1,4 +1,5 @@
 using System;
+using Object;
 using UnityEngine;
 
 namespace DesignPattern
@@ -8,6 +9,6 @@ namespace DesignPattern
         public static Action OnJoinLobby;
         public static Action OnLeaveLobby;
         public static Action<Vector3> OnMove;
-        public static Action<int> OnChangeVolume;
+        public static Action<SoundType,int> OnChangeVolume;
     }    
 }

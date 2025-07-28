@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Object
@@ -9,7 +10,7 @@ namespace Object
         private List<Soldier> _soliders = new List<Soldier>();
         private Action<bool> OnVisibleOutline;
         public Action<Team> OnAllSoldiersOnTeamDeath;
-        
+        private Action<Team> CameraFollowTeam;
         
         private Vector3[] _destinationOffsets = {Vector3.zero, new Vector3(0.5f,0,0), new Vector3(-0.5f,0,0), new Vector3(0.25f,0,-0.5f), new Vector3(-0.25f,0,-0.5f)};
 
@@ -30,7 +31,12 @@ namespace Object
 
         private void VisibleOutlineAllSoldiers(bool visible) => OnVisibleOutline?.Invoke(visible);
 
-        public Transform GetTransformFirstSoldier() => _soliders[0].transform;
+        [CanBeNull]
+        public Transform GetTransformFirstSoldier() =>
+            _soliders != null && _soliders.Count > 0 && _soliders[0] != null 
+                ? _soliders[0].transform 
+                : null;
+
 
         public int GetNumSoldiers() => _soliders.Count;
         
@@ -43,6 +49,7 @@ namespace Object
             _soliders.Remove(soldier);
             if(_soliders.Count==0)
                 OnAllSoldiersOnTeamDeath?.Invoke(this);
+            CameraFollowTeam?.Invoke(this);
         }
 
         public void TeamMoveTo(Vector3 newPosition, bool isPray = false)
@@ -61,6 +68,11 @@ namespace Object
             {
                 soldier.SetOpponentServerRpc(opponentId);
             }
+        }
+
+        public void CameraFollowTeamUpdateCallback(Action<Team> callback)
+        {
+            CameraFollowTeam = callback;
         }
 
         public void UpSoldiersValue(int damage, int armor)

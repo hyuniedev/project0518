@@ -34,7 +34,7 @@ namespace Object
             }
             
             if (!IsServer) return;
-            transform.position += _direction.Value * Time.deltaTime * 10f;
+            transform.position += _direction.Value * Time.deltaTime * 40f;
             if (_timeAlive < Time.time) DisableBullet();
         }
 

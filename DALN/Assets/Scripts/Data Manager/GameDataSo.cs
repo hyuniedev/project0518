@@ -35,12 +35,7 @@ namespace Data_Manager
         
         public List<Texture> soliderTextures = new List<Texture>();
 
-        public Dictionary<int, Vector3> TeamInitialPosition = new Dictionary<int, Vector3>()
-        {
-            { 1, new Vector3(53.5f, 9.5f, 72.5f) },
-            { 2, new Vector3(-85.5f, 2, 22.5f) },
-            { 3, new Vector3(17.5f, 1.5f, -84.3f) }
-        };
+        public List<Vector3> TeamInitialPosition = new List<Vector3>();
     }
 
 }

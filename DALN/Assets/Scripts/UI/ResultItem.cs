@@ -14,7 +14,7 @@ namespace UI
             winText.text = isWin ? "Win" : "Lose";
             winText.color = isWin ? Color.green : Color.red;
             nameText.text = name;
-            rankText.text = "Rank: " + rank;
+            rankText.text = "Rank: " + (isWin ? rank + 10 : rank);
         }
     }
 }

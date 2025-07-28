@@ -13,6 +13,9 @@ namespace Controller
         [SerializeField] private GameObject signinPanel;
         [SerializeField] private GameObject signUpPanel;
         [SerializeField] private GameObject notificationPanel;
+        [SerializeField] private GameObject settingPanel;
+        [SerializeField] private Button settingButton;
+        [SerializeField] private Button offSettingButton;
 
         private Transform _parent;
         private Text _title;
@@ -53,6 +56,22 @@ namespace Controller
         }
 
         #endregion
+
+        private void Start()
+        {
+            settingButton.onClick.AddListener(()=>{settingPanel.SetActive(true); offSettingButton.gameObject.SetActive(true);});
+            offSettingButton.onClick.AddListener(()=>{settingPanel.SetActive(false); offSettingButton.gameObject.SetActive(false);});
+        }
+
+        private void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.Escape)) {
+                if(settingPanel.activeSelf)
+                    offSettingButton.onClick.Invoke();
+                else
+                    settingButton.onClick.Invoke();
+            }
+        }
 
         private void OnEnable()
         {

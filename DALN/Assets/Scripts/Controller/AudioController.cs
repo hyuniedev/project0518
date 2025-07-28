@@ -47,6 +47,7 @@ namespace Controller
                 audioSource.volume = GameData.Instance.GetVolume(SoundType.Sfx) / 100f;
                 StartCoroutine(Enqueue(audioSource, length));
                 audioSource.spatialBlend = nameAudio.Equals("Coin")||nameAudio.Equals("PrayCompleted")?0f:1f;
+                audioSource.GetComponent<AudioModal>().Type = SoundType.Sfx;
             }
             audioSource.loop = sound.type == SoundType.Music;
             audioSource.Play();

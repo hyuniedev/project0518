@@ -1,3 +1,4 @@
+using System;
 using DesignPattern;
 using Object;
 using UnityEngine;
@@ -22,6 +23,17 @@ namespace Data_Manager
                 }
                 return _instance;
             }
+        }
+
+        private void Start()
+        {
+            ActionEvent.OnChangeVolume += SaveVolume;
+        }
+
+        private void OnDisable()
+        {
+            if(ActionEvent.OnChangeVolume!=null)
+                ActionEvent.OnChangeVolume -= SaveVolume;       
         }
 
         public void SaveSessionData(bool isAnonymous)
